@@ -279,11 +279,11 @@ html, body {
 .store-option {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 0;
+  gap: 10px;
+  padding: 8px 0;
   border-bottom: 0.5px solid var(--parchment);
   cursor: pointer;
-  font-size: 15px;
+  font-size: 14px;
   color: var(--ink);
 }
 .store-option:last-child { border-bottom: none; }
@@ -554,7 +554,7 @@ html, body {
   height: 4px;
   background: var(--parchment);
   border-radius: 2px;
-  margin: 0 auto 20px;
+  margin: 0 auto 12px;
 }
 
 .modal-title {
@@ -591,18 +591,18 @@ html, body {
 /* Item action sheet */
 .action-list { list-style: none; }
 .action-item {
-  padding: 14px 0;
+  padding: 10px 0;
   border-bottom: 0.5px solid var(--parchment);
-  font-size: 16px;
+  font-size: 14px;
   color: var(--ink);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 .action-item:last-child { border-bottom: none; }
 .action-item.danger { color: #c0392b; }
-.action-item svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.action-item svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
 /* Voice overlay */
 .voice-overlay {
@@ -875,7 +875,10 @@ html, body {
 <div class="modal-overlay" id="itemModal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <h2 class="modal-title" id="itemModalTitle">Item</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <h2 class="modal-title" id="itemModalTitle" style="margin-bottom:0;">Item</h2>
+      <button onclick="document.getElementById('itemModal').classList.remove('open')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--parchment);color:var(--ink-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-label="Close">✕</button>
+    </div>
     <ul class="action-list" id="itemActionList"></ul>
   </div>
 </div>
@@ -991,7 +994,8 @@ html, body {
       <div style="width:32px;height:32px;border-radius:9px;background:var(--gold-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       </div>
-      <h2 class="modal-title" id="bestOptTitle" style="margin-bottom:0;">Find best option</h2>
+      <h2 class="modal-title" id="bestOptTitle" style="margin-bottom:0;flex:1;">Find best option</h2>
+      <button onclick="document.getElementById('bestOptModal').classList.remove('open')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--parchment);color:var(--ink-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-label="Close">✕</button>
     </div>
     <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px;line-height:1.5;" id="bestOptSubtitle">Take up to 5 photos of products in the store. Claude will read the labels, search expert reviews, and rank them for you.</p>
 
@@ -1029,7 +1033,8 @@ html, body {
       <div style="width:32px;height:32px;border-radius:9px;background:var(--gold-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       </div>
-      <h2 class="modal-title" id="brandOptTitle" style="margin-bottom:0;">Find best option</h2>
+      <h2 class="modal-title" id="brandOptTitle" style="margin-bottom:0;flex:1;">Find best option</h2>
+      <button onclick="document.getElementById('brandOptModal').classList.remove('open')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--parchment);color:var(--ink-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-label="Close">✕</button>
     </div>
     <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px;line-height:1.5;">Enter up to 5 brand names separated by commas. Claude will search expert cooking sites and rank them by quality.</p>
 
