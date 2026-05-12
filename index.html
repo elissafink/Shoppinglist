@@ -1,0 +1,2375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kitchen">
+<meta name="theme-color" content="#1a1208">
+<title>Kitchen Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #faf7f2;
+  --warm-white: #f5f0e8;
+  --parchment: #ede6d6;
+  --ink: #1a1208;
+  --ink-soft: #3d3020;
+  --ink-muted: #7a6a52;
+  --ink-ghost: #b8a990;
+  --terracotta: #c4623a;
+  --terra-light: #f2e4db;
+  --terra-dark: #8c3f22;
+  --sage: #6b7c5a;
+  --sage-light: #e8eedf;
+  --sage-dark: #3d4d2e;
+  --gold: #c89b3c;
+  --gold-light: #f5edcc;
+  --gold-dark: #8a6620;
+  --urgent-bg: #fdf0eb;
+  --urgent-border: #e8916a;
+  --next-bg: #f5f0e8;
+  --next-border: #c8b898;
+  --pantry-bg: #eef3fb;
+  --pantry-border: #9db8e0;
+  --pantry-text: #2a5a9e;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  overscroll-behavior: none;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--cream);
+}
+
+/* ── Header ── */
+.header {
+  padding: calc(var(--safe-top) + 16px) 20px 0;
+  background: var(--cream);
+  flex-shrink: 0;
+}
+
+.header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.app-wordmark {
+  font-family: 'Lora', serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  transition: background 0.15s;
+}
+.icon-btn:active { background: var(--parchment); }
+
+.page-title {
+  font-family: 'Lora', serif;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.list-meta {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-bottom: 16px;
+}
+
+/* ── Sort tabs ── */
+.sort-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--parchment);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 16px;
+}
+
+.sort-tab {
+  flex: 1;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0 2px;
+}
+.sort-tab.active {
+  background: var(--cream);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(26,18,8,0.1);
+}
+
+/* ── List area ── */
+.list-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.category-section { margin-bottom: 20px; }
+
+.category-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+  padding: 8px 0 6px;
+  border-bottom: 0.5px solid var(--parchment);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── List items ── */
+.list-item {
+  display: flex;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 0.5px solid var(--parchment);
+  gap: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  touch-action: pan-y;
+  position: relative;
+  user-select: none;
+}
+
+.list-item:last-child { border-bottom: none; }
+
+.item-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-ghost);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.list-item.checked .item-check {
+  background: var(--sage);
+  border-color: var(--sage);
+}
+.list-item.checked .item-check::after {
+  content: '';
+  width: 5px;
+  height: 9px;
+  border: 2px solid white;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg) translateY(-1px);
+}
+
+.item-body { flex: 1; min-width: 0; }
+
+.item-name {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink);
+  transition: color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-item.checked .item-name {
+  text-decoration: line-through;
+  color: var(--ink-ghost);
+}
+
+.item-qty {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-top: 1px;
+}
+
+.item-recipe-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.recipe-tag {
+  font-size: 11px;
+  background: var(--gold-light);
+  color: var(--gold-dark);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-weight: 500;
+}
+
+.recipe-tag.adhoc {
+  background: var(--sage-light);
+  color: var(--sage-dark);
+}
+
+.store-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 1px 6px;
+  border: 0.5px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Store picker in modal */
+.store-picker { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+.store-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 0.5px solid var(--parchment);
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--ink);
+}
+.store-option:last-child { border-bottom: none; }
+.store-option .store-dot {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.store-option .store-check {
+  margin-left: auto;
+  color: var(--sage);
+  font-size: 18px;
+  display: none;
+}
+.store-option.selected .store-check { display: block; }
+.store-option.selected { font-weight: 500; }
+.store-section-label {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin: 0 0 8px;
+  font-weight: 500;
+}
+
+/* Urgency badges */
+.urgency-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 3px 7px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+.urgency-badge.urgent {
+  background: var(--urgent-bg);
+  color: var(--terracotta);
+  border: 0.5px solid var(--urgent-border);
+}
+.urgency-badge.next {
+  background: var(--next-bg);
+  color: var(--ink-muted);
+  border: 0.5px solid var(--next-border);
+}
+.urgency-badge.pantry {
+  background: var(--pantry-bg);
+  color: var(--pantry-text);
+  border: 0.5px solid var(--pantry-border);
+}
+
+.list-item.next-trip { opacity: 0.65; }
+
+/* Swipe-to-delete */
+.item-row-outer {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 0.5px solid var(--parchment);
+}
+.item-row-outer:last-child { border-bottom: none; }
+
+.swipe-delete-bg {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 90px;
+  background: #d63031;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: none;
+}
+.swipe-delete-bg svg {
+  width: 20px; height: 20px;
+  stroke: white; fill: none;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+.swipe-delete-bg span {
+  font-size: 11px; font-weight: 500;
+  color: white; letter-spacing: 0.03em;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  padding: 11px 0;
+  gap: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94);
+  border-bottom: none;
+  position: relative;
+  user-select: none;
+  background: var(--cream);
+  will-change: transform;
+}
+
+.list-item.swiping { transition: none; }
+
+/* Long-press / right-click action buttons (non-delete) */
+.item-ctx-actions {
+  display: flex;
+  gap: 4px;
+}
+.swipe-btn {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: none;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.swipe-btn.urgent-btn { background: var(--urgent-bg); color: var(--terracotta); }
+.swipe-btn.next-btn { background: var(--next-bg); color: var(--ink-muted); }
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--ink-ghost);
+}
+.empty-state .empty-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+.empty-state p { font-size: 15px; line-height: 1.6; }
+.empty-state .empty-hint {
+  font-size: 13px;
+  margin-top: 8px;
+  color: var(--ink-ghost);
+}
+
+/* ── Bottom bar ── */
+.bottom-bar {
+  padding: 12px 20px calc(var(--safe-bottom) + 12px);
+  background: var(--cream);
+  border-top: 0.5px solid var(--parchment);
+  flex-shrink: 0;
+}
+
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 12px;
+}
+
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 8px;
+  color: var(--ink-ghost);
+  transition: color 0.15s;
+}
+.nav-btn.active { color: var(--terracotta); }
+.nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nav-btn span { font-size: 10px; font-weight: 500; letter-spacing: 0.03em; }
+
+.add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.add-input {
+  flex: 1;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--parchment);
+  background: var(--warm-white);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.add-input::placeholder { color: var(--ink-ghost); }
+.add-input:focus { border-color: var(--ink-ghost); }
+
+.add-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: var(--terracotta);
+  color: white;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.add-btn:active { background: var(--terra-dark); }
+
+.voice-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--parchment);
+  background: var(--warm-white);
+  color: var(--ink-muted);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  position: relative;
+}
+.voice-btn.listening {
+  background: var(--terracotta);
+  border-color: var(--terracotta);
+  color: white;
+}
+.voice-btn.listening::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 15px;
+  border: 2px solid var(--terracotta);
+  opacity: 0.4;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse { 0%,100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(1.1); opacity: 0.1; } }
+
+/* ── Modals ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26,18,8,0.5);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal-sheet {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--cream);
+  border-radius: 20px 20px 0 0;
+  padding: 16px 20px calc(var(--safe-bottom) + 24px);
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-overlay.open .modal-sheet { transform: translateY(0); }
+
+.modal-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--parchment);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+
+.modal-title {
+  font-family: 'Lora', serif;
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  color: var(--ink);
+}
+
+/* Clear checked banner */
+.clear-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--sage-light);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--sage-dark);
+}
+.clear-btn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sage-dark);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* Item action sheet */
+.action-list { list-style: none; }
+.action-item {
+  padding: 14px 0;
+  border-bottom: 0.5px solid var(--parchment);
+  font-size: 16px;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.action-item:last-child { border-bottom: none; }
+.action-item.danger { color: #c0392b; }
+.action-item svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+/* Voice overlay */
+.voice-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26,18,8,0.85);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.voice-overlay.open { opacity: 1; pointer-events: all; }
+.voice-orb {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--terracotta);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.voice-orb svg { width: 36px; height: 36px; stroke: white; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.voice-status { font-size: 18px; color: white; font-family: 'Lora', serif; }
+.voice-transcript { font-size: 14px; color: rgba(255,255,255,0.6); text-align: center; padding: 0 40px; min-height: 20px; }
+.voice-hint { font-size: 12px; color: rgba(255,255,255,0.4); text-align: center; padding: 0 40px; line-height: 1.6; }
+.voice-cancel {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  font-size: 14px;
+  padding: 10px 28px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--ink);
+  color: var(--cream);
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  opacity: 0;
+  transition: all 0.2s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 300;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Scrollbar */
+.list-scroll::-webkit-scrollbar { width: 3px; }
+.list-scroll::-webkit-scrollbar-track { background: transparent; }
+.list-scroll::-webkit-scrollbar-thumb { background: var(--parchment); border-radius: 2px; }
+
+/* Best option cards */
+.bestopt-card {
+  border-radius: 12px;
+  border: 1px solid var(--parchment);
+  overflow: hidden;
+  margin-bottom: 10px;
+  background: var(--warm-white);
+}
+.bestopt-card.winner {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold);
+}
+.bestopt-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 10px;
+}
+.bestopt-rank {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600;
+  flex-shrink: 0;
+}
+.bestopt-rank.r1 { background: var(--gold-light); color: var(--gold-dark); }
+.bestopt-rank.r2 { background: var(--parchment); color: var(--ink-muted); }
+.bestopt-rank.r3 { background: var(--parchment); color: var(--ink-muted); }
+.bestopt-rank.r4 { background: var(--parchment); color: var(--ink-ghost); }
+.bestopt-rank.r5 { background: var(--parchment); color: var(--ink-ghost); }
+.bestopt-product-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.bestopt-winner-badge {
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--gold-light);
+  color: var(--gold-dark);
+  border-radius: 5px;
+  padding: 2px 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+.bestopt-card-body {
+  padding: 0 14px 14px;
+}
+.bestopt-verdict {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+.bestopt-bullets {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bestopt-bullets li {
+  font-size: 12px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+  padding-left: 14px;
+  position: relative;
+}
+.bestopt-bullets li::before {
+  content: '·';
+  position: absolute;
+  left: 4px;
+  color: var(--ink-ghost);
+}
+.bestopt-source {
+  font-size: 11px;
+  color: var(--ink-ghost);
+  margin-top: 8px;
+  font-style: italic;
+}
+.bestopt-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--parchment);
+  display: block;
+}
+.bestopt-thumb-wrap {
+  position: relative;
+}
+.bestopt-thumb-remove {
+  position: absolute; top: -5px; right: -5px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--ink); color: white;
+  border: none; cursor: pointer; font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.img-thumb {
+  width: 80px; height: 80px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 2px solid var(--parchment);
+  position: relative;
+}
+.img-thumb-wrap {
+  position: relative; display: inline-block;
+}
+.img-thumb-remove {
+  position: absolute; top: -6px; right: -6px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--ink); color: white;
+  border: none; cursor: pointer;
+  font-size: 12px; line-height: 20px; text-align: center;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.parsed-ingredient-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 0; border-bottom: 0.5px solid var(--parchment);
+  font-size: 14px;
+}
+.parsed-ingredient-row:last-child { border-bottom: none; }
+.parsed-ingredient-row input[type=checkbox] {
+  width: 18px; height: 18px; accent-color: var(--terracotta); flex-shrink: 0; cursor: pointer;
+}
+.parsed-ing-name { flex: 1; color: var(--ink); }
+.parsed-ing-qty { font-size: 12px; color: var(--ink-muted); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <span class="app-wordmark">Kitchen Companion</span>
+      <div class="header-actions">
+        <button class="icon-btn" id="clearCheckedBtn" title="Clear checked" style="display:none">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+        <button class="icon-btn" id="sortMenuBtn" title="Sort options">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <h1 class="page-title">Shopping List</h1>
+    <p class="list-meta" id="listMeta">0 items</p>
+
+    <div class="sort-tabs">
+      <button class="sort-tab active" data-sort="category">By aisle</button>
+      <button class="sort-tab" data-sort="recipe">By recipe</button>
+      <button class="sort-tab" data-sort="urgency">By urgency</button>
+      <button class="sort-tab" data-sort="store">By store</button>
+    </div>
+  </div>
+
+  <!-- List -->
+  <div class="list-scroll" id="listScroll">
+    <div id="listContainer"></div>
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="bottom-bar">
+    <!-- Nav -->
+    <div class="bottom-nav">
+      <button class="nav-btn active" data-view="list">
+        <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span>List</span>
+      </button>
+      <button class="nav-btn" data-view="recipes">
+        <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Recipes</span>
+      </button>
+      <button class="nav-btn" data-view="library">
+        <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span>Library</span>
+      </button>
+      <button class="nav-btn" data-view="settings" id="settingsNavBtn">
+        <svg viewBox="0 0 24 24" style="position:relative"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+        <span id="settingsAlert" style="display:none;position:absolute;top:2px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--terracotta);"></span>
+      </button>
+    </div>
+    <!-- Add row -->
+    <div class="add-row">
+      <button class="voice-btn" id="voiceBtn" title="Voice input">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <button class="voice-btn" id="imgScanBtn" title="Scan recipe screenshot">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </button>
+      <input class="add-input" id="addInput" type="text" placeholder="Add an ingredient…" autocomplete="off" autocorrect="off">
+      <button class="add-btn" id="addBtn" aria-label="Add item">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+    <input type="file" id="imgFileInput" accept="image/*" multiple style="display:none">
+  </div>
+</div>
+
+<!-- Item action modal -->
+<div class="modal-overlay" id="itemModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title" id="itemModalTitle">Item</h2>
+    <ul class="action-list" id="itemActionList"></ul>
+  </div>
+</div>
+
+<!-- Settings view (slides over list area) -->
+<div id="settingsView" style="display:none;position:absolute;inset:0;background:var(--cream);z-index:50;overflow-y:auto;padding:0 20px calc(var(--safe-bottom) + 100px);">
+  <div style="padding-top:20px;margin-bottom:24px;">
+    <button onclick="showView('list')" style="background:none;border:none;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-bottom:6px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      <span style="font-size:11px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-muted);">Kitchen Companion</span>
+    </button>
+    <h1 style="font-family:'Lora',serif;font-size:28px;font-weight:500;color:var(--ink);">Settings</h1>
+  </div>
+
+  <!-- API Key section -->
+  <div style="background:var(--warm-white);border-radius:var(--border-radius-lg, 12px);border:0.5px solid var(--parchment);padding:20px;margin-bottom:16px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--terra-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--terracotta)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      </div>
+      <div>
+        <p style="font-size:15px;font-weight:500;color:var(--ink);margin-bottom:3px;">Anthropic API Key</p>
+        <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Required for screenshot scanning, substitution advice, and recipe import. Stored only on this device — never sent anywhere except directly to Anthropic.</p>
+      </div>
+    </div>
+
+    <div id="apiKeyStatus" style="margin-bottom:12px;"></div>
+
+    <div style="position:relative;margin-bottom:10px;">
+      <input id="apiKeyInput" type="password" placeholder="sk-ant-…" autocomplete="off" autocorrect="off" spellcheck="false"
+        style="width:100%;height:44px;padding:0 44px 0 14px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;font-variant-numeric:tabular-nums;letter-spacing:0.02em;">
+      <button id="apiKeyToggle" title="Show/hide key" style="position:absolute;right:0;top:0;width:44px;height:44px;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink-muted);">
+        <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+
+    <button id="apiKeySaveBtn" style="width:100%;height:44px;border-radius:10px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:background 0.15s;">Save key</button>
+  </div>
+
+  <!-- How to get a key -->
+  <div style="background:var(--warm-white);border-radius:12px;border:0.5px solid var(--parchment);padding:20px;margin-bottom:16px;">
+    <p style="font-size:14px;font-weight:500;color:var(--ink);margin-bottom:10px;">How to get your API key</p>
+    <ol style="font-size:13px;color:var(--ink-muted);line-height:1.8;padding-left:18px;">
+      <li>Go to <span style="color:var(--terracotta);font-weight:500;">console.anthropic.com</span></li>
+      <li>Sign in or create a free account</li>
+      <li>Click <strong style="color:var(--ink);">API Keys</strong> in the left sidebar</li>
+      <li>Click <strong style="color:var(--ink);">Create Key</strong> — name it "Kitchen Companion"</li>
+      <li>Copy the key (starts with <code style="font-size:12px;background:var(--parchment);padding:1px 5px;border-radius:4px;">sk-ant-</code>) and paste it above</li>
+    </ol>
+    <p style="font-size:12px;color:var(--ink-ghost);margin-top:10px;line-height:1.5;">Tip: set a monthly spend limit in the Billing section — $5–10/month is more than enough for personal use.</p>
+  </div>
+
+  <!-- Clear data -->
+  <div style="background:var(--warm-white);border-radius:12px;border:0.5px solid var(--parchment);padding:20px;">
+    <p style="font-size:14px;font-weight:500;color:var(--ink);margin-bottom:6px;">Data</p>
+    <p style="font-size:13px;color:var(--ink-muted);margin-bottom:14px;">All your list items and recipe library are saved locally on this device.</p>
+    <button id="clearAllDataBtn" style="background:none;border:1px solid #e8a0a0;color:#c0392b;font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 16px;border-radius:8px;cursor:pointer;">Clear all list data</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+  <div class="voice-orb" id="voiceOrb">
+    <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+  </div>
+  <p class="voice-status" id="voiceStatus">Listening…</p>
+  <p class="voice-transcript" id="voiceTranscript"></p>
+  <p class="voice-hint">Try: "Add butter" · "I'm almost out of olive oil" · "I'm out of eggs"</p>
+  <button class="voice-cancel" id="voiceCancel">Cancel</button>
+</div>
+
+<!-- Image scan modal -->
+<div class="modal-overlay" id="imgScanModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2 class="modal-title">Scan recipe screenshots</h2>
+    <p style="font-size:14px;color:var(--ink-muted);margin-bottom:16px;line-height:1.5">Select 1–3 screenshots showing ingredients. Claude will read them and add everything to your list.</p>
+
+    <!-- Previews -->
+    <div id="imgPreviews" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;"></div>
+
+    <!-- Pick button -->
+    <button id="imgPickBtn" style="width:100%;height:48px;border-radius:12px;border:1.5px dashed var(--ink-ghost);background:var(--warm-white);font-family:'DM Sans',sans-serif;font-size:15px;color:var(--ink-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      Choose screenshots
+    </button>
+
+    <!-- Parse status -->
+    <div id="imgParseStatus" style="display:none;text-align:center;padding:20px 0;">
+      <div id="imgSpinner" style="width:32px;height:32px;border:3px solid var(--parchment);border-top-color:var(--terracotta);border-radius:50%;margin:0 auto 12px;animation:spin 0.8s linear infinite;"></div>
+      <p id="imgStatusText" style="font-size:14px;color:var(--ink-muted);">Reading your screenshots…</p>
+    </div>
+
+    <!-- Results preview -->
+    <div id="imgResults" style="display:none;">
+      <div style="margin-bottom:14px;">
+        <label for="imgRecipeName" style="display:block;font-size:13px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Recipe name <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
+        <input id="imgRecipeName" type="text" placeholder="e.g. Brown Butter Chocolate Chip Cookies" autocorrect="on"
+          style="width:100%;height:42px;padding:0 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;">
+      </div>
+      <p style="font-size:13px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Found ingredients</p>
+      <div id="imgResultList" style="margin-bottom:16px;max-height:240px;overflow-y:auto;"></div>
+      <button id="imgAddAllBtn" style="width:100%;height:48px;border-radius:12px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;">Add all to list</button>
+    </div>
+  </div>
+</div>
+
+<!-- Best option modal -->
+<div class="modal-overlay" id="bestOptModal">
+  <div class="modal-sheet" id="bestOptSheet" style="max-height:92vh;">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+      <div style="width:32px;height:32px;border-radius:9px;background:var(--gold-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <h2 class="modal-title" id="bestOptTitle" style="margin-bottom:0;">Find best option</h2>
+    </div>
+    <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px;line-height:1.5;" id="bestOptSubtitle">Take up to 5 photos of products in the store. Claude will read the labels, search expert reviews, and rank them for you.</p>
+
+    <!-- Photo grid -->
+    <div id="bestOptPreviews" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px;"></div>
+
+    <!-- Add photo button -->
+    <button id="bestOptPickBtn" style="width:100%;height:44px;border-radius:12px;border:1.5px dashed var(--ink-ghost);background:var(--warm-white);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Add product photo
+    </button>
+    <input type="file" id="bestOptFileInput" accept="image/*" capture="environment" style="display:none">
+
+    <!-- Status -->
+    <div id="bestOptStatus" style="display:none;text-align:center;padding:24px 0;">
+      <div style="width:32px;height:32px;border:3px solid var(--parchment);border-top-color:var(--gold);border-radius:50%;margin:0 auto 12px;animation:spin 0.8s linear infinite;"></div>
+      <p id="bestOptStatusText" style="font-size:14px;color:var(--ink-muted);line-height:1.6;"></p>
+    </div>
+
+    <!-- Analyze button -->
+    <button id="bestOptAnalyzeBtn" style="display:none;width:100%;height:48px;border-radius:12px;border:none;background:var(--gold-dark);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:0;">
+      Analyze &amp; rank these products
+    </button>
+
+    <!-- Results -->
+    <div id="bestOptResults" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- Brand name advisor modal -->
+<div class="modal-overlay" id="brandOptModal">
+  <div class="modal-sheet" id="brandOptSheet" style="max-height:92vh;">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+      <div style="width:32px;height:32px;border-radius:9px;background:var(--gold-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <h2 class="modal-title" id="brandOptTitle" style="margin-bottom:0;">Find best option</h2>
+    </div>
+    <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px;line-height:1.5;">Enter up to 5 brand names separated by commas. Claude will search expert cooking sites and rank them by quality.</p>
+
+    <!-- Brand name input -->
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Brand names</label>
+      <textarea id="brandOptInput" rows="3" placeholder="e.g. Kerrygold, Plugrá, Land O'Lakes, Vermont Creamery, Organic Valley"
+        style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;resize:none;line-height:1.5;"></textarea>
+      <p id="brandOptCount" style="font-size:12px;color:var(--ink-ghost);margin-top:4px;text-align:right;">0 / 5 brands</p>
+    </div>
+
+    <!-- Analyze button -->
+    <button id="brandOptAnalyzeBtn" style="width:100%;height:48px;border-radius:12px;border:none;background:var(--gold-dark);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:0;">
+      Search &amp; rank these brands
+    </button>
+
+    <!-- Status -->
+    <div id="brandOptStatus" style="display:none;text-align:center;padding:24px 0;">
+      <div style="width:32px;height:32px;border:3px solid var(--parchment);border-top-color:var(--gold);border-radius:50%;margin:0 auto 12px;animation:spin 0.8s linear infinite;"></div>
+      <p id="brandOptStatusText" style="font-size:14px;color:var(--ink-muted);line-height:1.6;"></p>
+    </div>
+
+    <!-- Results -->
+    <div id="brandOptResults" style="display:none;margin-top:16px;"></div>
+  </div>
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+const CATEGORIES = ['Produce','Dairy & Eggs','Meat & Seafood','Bakery & Bread','Pantry & Dry Goods','Canned & Jarred','Frozen','Beverages','Spices & Condiments','Household & Other'];
+
+const CATEGORY_ICONS = {
+  'Produce':'🥦','Dairy & Eggs':'🥛','Meat & Seafood':'🥩','Bakery & Bread':'🍞',
+  'Pantry & Dry Goods':'🌾','Canned & Jarred':'🥫','Frozen':'🧊','Beverages':'🧃',
+  'Spices & Condiments':'🧂','Household & Other':'🛒'
+};
+
+const STORES = [
+  { key: 'grocery',   label: 'Grocery store',        short: 'Grocery',   icon: '🛒', color: '#e8f4ea', text: '#2d6a35' },
+  { key: 'highend',   label: 'High-end grocery',      short: 'High-end',  icon: '✨', color: '#f5edcc', text: '#7a5c10' },
+  { key: 'specialty', label: 'Specialty grocery',     short: 'Specialty', icon: '🏪', color: '#eae4f5', text: '#5a3d8a' },
+  { key: 'online',    label: 'Order online',          short: 'Online',    icon: '📦', color: '#e4eff8', text: '#1a5a8a' },
+  { key: 'other',     label: 'Other',                 short: 'Other',     icon: '📍', color: '#f0ece6', text: '#6b5a42' },
+];
+
+// Simple keyword-based category assignment (no API needed for quick categorization)
+function guessCategory(name) {
+  const n = name.toLowerCase();
+  if (/\b(apple|banana|berry|berries|lemon|lime|orange|grape|peach|plum|mango|pear|melon|avocado|tomato|tomatoes|lettuce|spinach|kale|arugula|herb|basil|parsley|cilantro|mint|thyme|rosemary|dill|chive|onion|garlic|shallot|carrot|celery|potato|sweet potato|pepper|zucchini|squash|broccoli|cauliflower|cabbage|corn|cucumber|mushroom|asparagus|beet|radish|turnip|leek|scallion|green onion|fruit|vegetable|produce|fresh)\b/.test(n)) return 'Produce';
+  if (/\b(milk|cream|butter|cheese|yogurt|egg|eggs|sour cream|cream cheese|half.and.half|whipping cream|mascarpone|ricotta|mozzarella|parmesan|cheddar|brie|gouda|dairy|kefir)\b/.test(n)) return 'Dairy & Eggs';
+  if (/\b(chicken|beef|pork|lamb|turkey|duck|salmon|tuna|shrimp|cod|tilapia|halibut|bacon|sausage|ground|steak|fillet|meat|seafood|fish|prosciutto|pancetta|chorizo|salami)\b/.test(n)) return 'Meat & Seafood';
+  if (/\b(bread|loaf|bagel|muffin|croissant|baguette|roll|tortilla|pita|naan|sourdough|brioche|focaccia|bun|pastry|cake|pie crust|bakery)\b/.test(n)) return 'Bakery & Bread';
+  if (/\b(flour|sugar|brown sugar|powdered sugar|allulose|oat|oats|oatmeal|rice|pasta|noodle|quinoa|lentil|bean|beans|lentils|chickpea|split pea|barley|couscous|farro|bulgur|cornmeal|polenta|cereal|granola|baking powder|baking soda|yeast|cornstarch|panko|breadcrumb|chocolate chip|cocoa|vanilla|extract|almond flour|coconut flour|tapioca|xanthan|dry|pantry)\b/.test(n)) return 'Pantry & Dry Goods';
+  if (/\b(can|canned|jar|jarred|tomato sauce|tomato paste|crushed tomato|diced tomato|broth|stock|coconut milk|condensed|evaporated|pickle|olive|tapenade|anchovy|sardine|tuna can|soup)\b/.test(n)) return 'Canned & Jarred';
+  if (/\b(frozen|ice cream|gelato|sorbet|edamame|pea|corn frozen|pizza frozen|waffle|biscuit frozen)\b/.test(n)) return 'Frozen';
+  if (/\b(water|juice|soda|sparkling|wine|beer|coffee|tea|espresso|milk alt|oat milk|almond milk|soy milk|kombucha|lemonade|cider|drink|beverage)\b/.test(n)) return 'Beverages';
+  if (/\b(salt|pepper|spice|cumin|paprika|turmeric|cayenne|cinnamon|nutmeg|clove|cardamom|coriander|oregano|bay leaf|mustard|ketchup|mayo|mayonnaise|hot sauce|soy sauce|fish sauce|worcestershire|vinegar|oil|olive oil|sesame oil|vegetable oil|coconut oil|maple syrup|honey|jam|jelly|peanut butter|almond butter|tahini|miso|hoisin|sriracha|tabasco|relish|dressing|sauce|condiment)\b/.test(n)) return 'Spices & Condiments';
+  return 'Household & Other';
+}
+
+// Load / init state
+let state = {
+  items: [],
+  sortMode: 'category',
+  nextId: 1
+};
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('kc_list_v1');
+    if (saved) state = JSON.parse(saved);
+  } catch(e) {}
+}
+
+function saveState() {
+  try { localStorage.setItem('kc_list_v1', JSON.stringify(state)); } catch(e) {}
+}
+
+loadState();
+
+// ── Render ────────────────────────────────────────────────────────────────────
+
+function render() {
+  const container = document.getElementById('listContainer');
+  const items = state.items;
+
+  // Meta
+  const total = items.length;
+  const checked = items.filter(i => i.checked).length;
+  const urgentCount = items.filter(i => i.urgency === 'urgent' && !i.checked).length;
+  const nextCount = items.filter(i => i.urgency === 'next' && !i.checked).length;
+  const pantryCount = items.filter(i => i.urgency === 'pantry' && !i.checked).length;
+  let metaParts = [];
+  if (total === 0) metaParts.push('Empty list');
+  else {
+    metaParts.push(`${total - checked} remaining`);
+    if (urgentCount) metaParts.push(`${urgentCount} urgent`);
+    if (pantryCount) metaParts.push(`${pantryCount} check pantry`);
+    if (nextCount) metaParts.push(`${nextCount} next trip`);
+    if (checked) metaParts.push(`${checked} checked`);
+  }
+  document.getElementById('listMeta').textContent = metaParts.join(' · ');
+
+  // Clear checked button
+  document.getElementById('clearCheckedBtn').style.display = checked > 0 ? 'flex' : 'none';
+
+  if (total === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🛒</div>
+      <p>Your list is empty</p>
+      <p class="empty-hint">Type an ingredient below, paste a recipe URL,<br>or tap the mic to speak.</p>
+    </div>`;
+    return;
+  }
+
+  // Group items
+  let groups = [];
+  if (state.sortMode === 'category') {
+    const map = {};
+    // Urgent items first
+    const urgentActive = items.filter(i => i.urgency === 'urgent' && !i.checked);
+    if (urgentActive.length) {
+      groups.push({ label: '🔴 Need Now', items: urgentActive });
+    }
+    // Regular items by category
+    const regular = items.filter(i => i.urgency !== 'urgent' && i.urgency !== 'next' && i.urgency !== 'pantry' && !i.checked);
+    regular.forEach(item => {
+      const cat = item.category || 'Household & Other';
+      if (!map[cat]) map[cat] = [];
+      map[cat].push(item);
+    });
+    CATEGORIES.forEach(cat => {
+      if (map[cat] && map[cat].length) {
+        const icon = CATEGORY_ICONS[cat] || '📦';
+        groups.push({ label: `${icon} ${cat}`, items: map[cat] });
+      }
+    });
+    // Pantry check items
+    const pantry = items.filter(i => i.urgency === 'pantry' && !i.checked);
+    if (pantry.length) groups.push({ label: '🔍 Check Pantry', items: pantry });
+    // Next trip
+    const next = items.filter(i => i.urgency === 'next' && !i.checked);
+    if (next.length) groups.push({ label: '🕐 Next Trip', items: next });
+    // Checked
+    const checkedItems = items.filter(i => i.checked);
+    if (checkedItems.length) groups.push({ label: '✓ In cart', items: checkedItems });
+
+  } else if (state.sortMode === 'recipe') {
+    const map = {};
+    items.forEach(item => {
+      const sources = item.recipes && item.recipes.length ? item.recipes : ['Added manually'];
+      sources.forEach(r => {
+        if (!map[r]) map[r] = [];
+        if (!map[r].find(x => x.id === item.id)) map[r].push(item);
+      });
+    });
+    Object.keys(map).sort().forEach(recipe => {
+      groups.push({ label: recipe, items: map[recipe] });
+    });
+
+  } else if (state.sortMode === 'urgency') {
+    const urgent = items.filter(i => i.urgency === 'urgent' && !i.checked);
+    const normal = items.filter(i => !i.urgency && !i.checked);
+    const pantry = items.filter(i => i.urgency === 'pantry' && !i.checked);
+    const next = items.filter(i => i.urgency === 'next' && !i.checked);
+    const checked = items.filter(i => i.checked);
+    if (urgent.length) groups.push({ label: '🔴 Need Now', items: urgent });
+    if (normal.length) groups.push({ label: '🛒 Active', items: normal });
+    if (pantry.length) groups.push({ label: '🔍 Check Pantry', items: pantry });
+    if (next.length) groups.push({ label: '🕐 Next Trip', items: next });
+    if (checked.length) groups.push({ label: '✓ In cart', items: checked });
+
+  } else { // store
+    const unassigned = items.filter(i => !i.store && !i.checked);
+    STORES.forEach(s => {
+      const storeItems = items.filter(i => i.store === s.key && !i.checked);
+      if (storeItems.length) groups.push({ label: `${s.icon} ${s.label}`, items: storeItems });
+    });
+    if (unassigned.length) groups.push({ label: '❓ No store assigned', items: unassigned });
+    const checked = items.filter(i => i.checked);
+    if (checked.length) groups.push({ label: '✓ In cart', items: checked });
+  }
+  container.innerHTML = groups.map(g => `
+    <div class="category-section">
+      <div class="category-label">${g.label}</div>
+      ${g.items.map(item => renderItem(item)).join('')}
+    </div>
+  `).join('');
+
+  // Attach item listeners
+  container.querySelectorAll('.item-row-outer').forEach(outer => {
+    const id = parseInt(outer.dataset.id);
+    const inner = outer.querySelector('.list-item');
+
+    // Tap to check (only if not swiped)
+    inner.addEventListener('click', (e) => {
+      if (inner._swiped) { inner._swiped = false; return; }
+      toggleCheck(id);
+    });
+
+    inner.addEventListener('contextmenu', (e) => { e.preventDefault(); openItemModal(id); });
+
+    // Long press
+    let pressTimer;
+    inner.addEventListener('touchstart', () => { pressTimer = setTimeout(() => { openItemModal(id); }, 500); }, { passive: true });
+    inner.addEventListener('touchend', () => clearTimeout(pressTimer));
+    inner.addEventListener('touchmove', () => clearTimeout(pressTimer), { passive: true });
+
+    // ── Swipe-to-delete touch handling ──
+    const THRESHOLD = 75; // px to commit delete
+    const MAX_SWIPE = 90;
+    let startX = 0, startY = 0, currentX = 0, tracking = false, axisLocked = false, isHoriz = false;
+
+    inner.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      currentX = 0;
+      tracking = true;
+      axisLocked = false;
+      isHoriz = false;
+      inner.classList.remove('swiping');
+    }, { passive: true });
+
+    inner.addEventListener('touchmove', (e) => {
+      if (!tracking) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+
+      if (!axisLocked) {
+        if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+        isHoriz = Math.abs(dx) > Math.abs(dy);
+        axisLocked = true;
+      }
+      if (!isHoriz) return;
+
+      // Only left swipe
+      if (dx > 0) { inner.style.transform = 'translateX(0)'; return; }
+      e.preventDefault();
+      clearTimeout(pressTimer);
+      inner.classList.add('swiping');
+      currentX = Math.max(dx, -MAX_SWIPE);
+      inner.style.transform = `translateX(${currentX}px)`;
+
+      // Tint the bg proportionally
+      const pct = Math.min(Math.abs(currentX) / THRESHOLD, 1);
+      outer.querySelector('.swipe-delete-bg').style.opacity = pct;
+    }, { passive: false });
+
+    inner.addEventListener('touchend', () => {
+      if (!tracking || !isHoriz) { tracking = false; return; }
+      tracking = false;
+      inner.classList.remove('swiping');
+
+      if (Math.abs(currentX) >= THRESHOLD) {
+        // Commit: slide fully off then delete
+        inner._swiped = true;
+        inner.style.transition = 'transform 0.2s ease-in';
+        inner.style.transform = `translateX(-100%)`;
+        outer.style.transition = 'max-height 0.25s ease 0.15s, opacity 0.25s ease 0.15s';
+        outer.style.overflow = 'hidden';
+        setTimeout(() => {
+          outer.style.maxHeight = outer.offsetHeight + 'px';
+          requestAnimationFrame(() => {
+            outer.style.maxHeight = '0';
+            outer.style.opacity = '0';
+          });
+          setTimeout(() => deleteItem(id), 320);
+        }, 150);
+      } else {
+        // Snap back
+        inner.style.transform = 'translateX(0)';
+        outer.querySelector('.swipe-delete-bg').style.opacity = 0;
+        setTimeout(() => { inner._swiped = false; }, 50);
+      }
+      currentX = 0;
+    });
+  });
+
+  // Legacy swipe-btn support (long-press modal only now, no inline buttons)
+  container.querySelectorAll('.swipe-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = parseInt(btn.dataset.id);
+      const action = btn.dataset.action;
+      if (action === 'urgent') setUrgency(id, 'urgent');
+      else if (action === 'next') setUrgency(id, 'next');
+    });
+  });
+}
+
+function renderItem(item) {
+  const isNext = item.urgency === 'next';
+  const isUrgent = item.urgency === 'urgent';
+  const isPantry = item.urgency === 'pantry';
+  const urgencyBadge = isUrgent
+    ? `<span class="urgency-badge urgent">Need now</span>`
+    : isNext ? `<span class="urgency-badge next">Next trip</span>`
+    : isPantry ? `<span class="urgency-badge pantry">Check pantry</span>` : '';
+
+  const recipeTags = item.recipes && item.recipes.length
+    ? item.recipes.map(r => `<span class="recipe-tag">${escHtml(r)}</span>`).join('')
+    : `<span class="recipe-tag adhoc">Manual add</span>`;
+
+  const qty = item.quantity ? `<div class="item-qty">${escHtml(item.quantity)}</div>` : '';
+
+  const storeDef = item.store ? STORES.find(s => s.key === item.store) : null;
+  const storeBadge = storeDef
+    ? `<span class="store-badge" style="background:${storeDef.color};color:${storeDef.text};border-color:${storeDef.color}">${storeDef.icon} ${storeDef.short}</span>`
+    : '';
+
+  return `<div class="item-row-outer" data-id="${item.id}">
+    <div class="swipe-delete-bg" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      <span>Delete</span>
+    </div>
+    <div class="list-item ${item.checked ? 'checked' : ''} ${isNext ? 'next-trip' : ''} ${isPantry ? 'next-trip' : ''}" data-id="${item.id}">
+      <div class="item-check"></div>
+      <div class="item-body">
+        <div class="item-name">${escHtml(item.name)}</div>
+        ${qty}
+        <div class="item-recipe-tags">${recipeTags}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+        ${urgencyBadge}
+        ${storeBadge}
+      </div>
+    </div>
+  </div>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Item actions ──────────────────────────────────────────────────────────────
+
+function addItem(name, options = {}) {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const category = options.category || guessCategory(trimmed);
+  const item = {
+    id: state.nextId++,
+    name: trimmed,
+    quantity: options.quantity || '',
+    category,
+    recipes: options.recipes || [],
+    urgency: options.urgency || null,
+    checked: false,
+    addedAt: Date.now()
+  };
+  state.items.push(item);
+  saveState();
+  render();
+  return item;
+}
+
+function toggleCheck(id) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  item.checked = !item.checked;
+  saveState();
+  render();
+}
+
+function setUrgency(id, urgency) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  item.urgency = item.urgency === urgency ? null : urgency;
+  if (urgency === 'urgent') item.checked = false;
+  saveState();
+  render();
+  showToast(urgency === 'urgent' ? 'Marked as Need Now 🔴' : urgency === 'pantry' ? 'Marked as Check Pantry 🔍' : 'Moved to Next Trip 🕐');
+}
+
+function setStore(id, storeKey) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  item.store = storeKey;
+  saveState();
+  render();
+  if (storeKey) {
+    const s = STORES.find(s => s.key === storeKey);
+    showToast(`${s.icon} Tagged as ${s.label}`);
+  } else {
+    showToast('Store tag removed');
+  }
+}
+
+function deleteItem(id) {
+  state.items = state.items.filter(i => i.id !== id);
+  saveState();
+  render();
+  closeModal();
+}
+
+function clearChecked() {
+  state.items = state.items.filter(i => !i.checked);
+  saveState();
+  render();
+  showToast('Cleared checked items');
+}
+
+// ── Item modal ────────────────────────────────────────────────────────────────
+
+let activeModalItemId = null;
+
+function openItemModal(id) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  activeModalItemId = id;
+
+  document.getElementById('itemModalTitle').textContent = item.name;
+  const list = document.getElementById('itemActionList');
+
+  const storeOptions = STORES.map(s => `
+    <div class="store-option ${item.store === s.key ? 'selected' : ''}" data-store="${s.key}">
+      <div class="store-dot" style="background:${s.color}">${s.icon}</div>
+      <span>${s.label}</span>
+      <span class="store-check">✓</span>
+    </div>
+  `).join('');
+
+  list.innerHTML = `
+    <li class="action-item" data-action="bestopt">
+      <svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+      Find best option using photos
+    </li>
+    <li class="action-item" data-action="brandopt">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+      Find best option using brand names
+    </li>
+    <li class="action-item" data-action="urgent">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      ${item.urgency === 'urgent' ? 'Remove urgent tag' : 'Mark as Need Now (urgent)'}
+    </li>
+    <li class="action-item" data-action="next">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      ${item.urgency === 'next' ? 'Move to active list' : 'Move to Next Trip'}
+    </li>
+    <li class="action-item" data-action="pantry">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      ${item.urgency === 'pantry' ? 'Remove pantry check tag' : 'Mark as Check Pantry'}
+    </li>
+    <li class="action-item" data-action="check">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      ${item.checked ? 'Uncheck' : 'Check off'}
+    </li>
+    <li style="padding: 14px 0; border-bottom: 0.5px solid var(--parchment);">
+      <p class="store-section-label">Where to buy</p>
+      <div class="store-picker">${storeOptions}</div>
+      ${item.store ? `<button style="background:none;border:none;font-size:13px;color:var(--ink-muted);cursor:pointer;padding:4px 0;text-decoration:underline;" data-action="clearstore">Clear store</button>` : ''}
+    </li>
+    <li class="action-item danger" data-action="delete">
+      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      Remove from list
+    </li>
+  `;
+
+  list.querySelectorAll('.action-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const action = el.dataset.action;
+      if (action === 'bestopt') { closeModal(); openBestOptModal(id); }
+      else if (action === 'brandopt') { closeModal(); openBrandOptModal(id); }
+      else if (action === 'urgent') { setUrgency(id, 'urgent'); closeModal(); }
+      else if (action === 'next') { setUrgency(id, 'next'); closeModal(); }
+      else if (action === 'pantry') { setUrgency(id, 'pantry'); closeModal(); }
+      else if (action === 'check') { toggleCheck(id); closeModal(); }
+      else if (action === 'delete') { deleteItem(id); }
+      else if (action === 'clearstore') { setStore(id, null); closeModal(); }
+    });
+  });
+
+  list.querySelectorAll('.store-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      setStore(id, opt.dataset.store);
+      closeModal();
+    });
+  });
+
+  list.querySelector('[data-action="clearstore"]')?.addEventListener('click', () => {
+    setStore(id, null); closeModal();
+  });
+
+  document.getElementById('itemModal').classList.add('open');
+}
+
+function closeModal() {
+  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+}
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal();
+  });
+});
+
+// ── Sort tabs ─────────────────────────────────────────────────────────────────
+
+document.querySelectorAll('.sort-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.sort-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    state.sortMode = tab.dataset.sort;
+    saveState();
+    render();
+  });
+});
+
+// ── Add input ─────────────────────────────────────────────────────────────────
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  const input = document.getElementById('addInput');
+  const val = input.value.trim();
+  if (val) {
+    addItem(val);
+    input.value = '';
+    input.blur();
+    showToast(`Added "${val}"`);
+  }
+});
+
+document.getElementById('addInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('addBtn').click();
+});
+
+// ── Clear checked ─────────────────────────────────────────────────────────────
+
+document.getElementById('clearCheckedBtn').addEventListener('click', clearChecked);
+
+// ── Voice input ───────────────────────────────────────────────────────────────
+
+let recognition = null;
+
+function parseVoiceCommand(transcript) {
+  const t = transcript.toLowerCase().trim();
+
+  // "I'm out of X" / "I am out of X" / "out of X" → urgent
+  const outOf = t.match(/(?:i(?:'m| am) )?(?:completely )?out of (.+)/);
+  if (outOf) return { item: outOf[1].trim(), urgency: 'urgent' };
+
+  // "almost out of X" / "nearly out of X" / "running low on X" → next trip
+  const nearlyOut = t.match(/(?:i(?:'m| am) )?(?:almost|nearly|running low on|getting low on|low on) (?:out of )?(.+)/);
+  if (nearlyOut) return { item: nearlyOut[1].trim(), urgency: 'next' };
+
+  // "add X" / "I need X" → normal add
+  const addMatch = t.match(/^(?:add |i need |need )?(.+)$/);
+  if (addMatch) return { item: addMatch[1].trim(), urgency: null };
+
+  return null;
+}
+
+function startVoice() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('Voice not supported in this browser');
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  const overlay = document.getElementById('voiceOverlay');
+  const status = document.getElementById('voiceStatus');
+  const transcript = document.getElementById('voiceTranscript');
+
+  overlay.classList.add('open');
+  status.textContent = 'Listening…';
+  transcript.textContent = '';
+
+  recognition.onresult = (e) => {
+    const result = Array.from(e.results).map(r => r[0].transcript).join('');
+    transcript.textContent = result;
+    if (e.results[e.results.length - 1].isFinal) {
+      const parsed = parseVoiceCommand(result);
+      if (parsed && parsed.item) {
+        addItem(parsed.item, { urgency: parsed.urgency });
+        let msg = `Added "${parsed.item}"`;
+        if (parsed.urgency === 'urgent') msg += ' — Need Now 🔴';
+        else if (parsed.urgency === 'next') msg += ' — Next Trip 🕐';
+        status.textContent = msg;
+        setTimeout(() => { overlay.classList.remove('open'); showToast(msg); }, 1200);
+      }
+    }
+  };
+
+  recognition.onerror = () => {
+    status.textContent = 'Could not hear clearly. Try again.';
+    setTimeout(() => overlay.classList.remove('open'), 1500);
+  };
+
+  recognition.onend = () => {
+    if (overlay.classList.contains('open')) {
+      status.textContent = 'Done listening';
+      setTimeout(() => overlay.classList.remove('open'), 800);
+    }
+  };
+
+  recognition.start();
+}
+
+document.getElementById('voiceBtn').addEventListener('click', startVoice);
+document.getElementById('voiceCancel').addEventListener('click', () => {
+  if (recognition) recognition.abort();
+  document.getElementById('voiceOverlay').classList.remove('open');
+});
+
+// ── Screen wake lock ──────────────────────────────────────────────────────────
+
+let wakeLock = null;
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+    } catch(e) {}
+  }
+}
+requestWakeLock();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') requestWakeLock();
+});
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Settings & API key ────────────────────────────────────────────────────────
+
+function getApiKey() {
+  return localStorage.getItem('kc_api_key') || '';
+}
+
+function saveApiKey(key) {
+  localStorage.setItem('kc_api_key', key.trim());
+}
+
+function updateApiKeyStatus() {
+  const key = getApiKey();
+  const statusEl = document.getElementById('apiKeyStatus');
+  const alertDot = document.getElementById('settingsAlert');
+  if (key) {
+    statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--sage-light);border-radius:8px;font-size:13px;color:var(--sage-dark);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Key saved — AI features are active
+      <button id="clearKeyBtn" style="margin-left:auto;background:none;border:none;font-size:12px;color:var(--sage-dark);cursor:pointer;text-decoration:underline;padding:0;">Remove</button>
+    </div>`;
+    document.getElementById('clearKeyBtn').addEventListener('click', () => {
+      localStorage.removeItem('kc_api_key');
+      document.getElementById('apiKeyInput').value = '';
+      updateApiKeyStatus();
+    });
+    alertDot.style.display = 'none';
+  } else {
+    statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--urgent-bg);border-radius:8px;font-size:13px;color:var(--terracotta);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      No key — screenshot scanning won't work yet
+    </div>`;
+    alertDot.style.display = 'block';
+  }
+}
+
+// Show/hide toggle
+document.getElementById('apiKeyToggle').addEventListener('click', () => {
+  const input = document.getElementById('apiKeyInput');
+  const icon = document.getElementById('eyeIcon');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`;
+  } else {
+    input.type = 'password';
+    icon.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+  }
+});
+
+// Save key
+document.getElementById('apiKeySaveBtn').addEventListener('click', () => {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val) { showToast('Please enter an API key'); return; }
+  if (!val.startsWith('sk-ant-')) { showToast('That doesn\'t look like an Anthropic key (should start with sk-ant-)'); return; }
+  saveApiKey(val);
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('apiKeyInput').type = 'password';
+  updateApiKeyStatus();
+  showToast('API key saved ✓');
+});
+
+// Clear data
+document.getElementById('clearAllDataBtn').addEventListener('click', () => {
+  if (confirm('Clear all list items? This cannot be undone.')) {
+    state.items = [];
+    state.nextId = 1;
+    saveState();
+    render();
+    showToast('List cleared');
+  }
+});
+
+// Prepopulate input if key exists (masked)
+const existingKey = getApiKey();
+if (existingKey) {
+  document.getElementById('apiKeyInput').placeholder = '••••••••••••••••••••';
+}
+
+// ── Nav tabs ──────────────────────────────────────────────────────────────────
+
+const settingsView = document.getElementById('settingsView');
+const listHeader = document.querySelector('.header');
+const listScroll = document.getElementById('listScroll');
+const bottomAddRow = document.querySelector('.add-row');
+
+function showView(view) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.nav-btn[data-view="${view}"]`).classList.add('active');
+
+  if (view === 'settings') {
+    settingsView.style.display = 'block';
+    listHeader.style.display = 'none';
+    listScroll.style.display = 'none';
+    bottomAddRow.style.display = 'none';
+    updateApiKeyStatus();
+  } else {
+    settingsView.style.display = 'none';
+    listHeader.style.display = 'block';
+    listScroll.style.display = 'block';
+    bottomAddRow.style.display = 'flex';
+    if (view !== 'list') {
+      showToast('Recipes & Library coming in the next build!');
+      setTimeout(() => showView('list'), 1800);
+    }
+  }
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => showView(btn.dataset.view));
+});
+
+// ── PWA manifest (inline) ─────────────────────────────────────────────────────
+
+const manifest = {
+  name: 'Kitchen Companion',
+  short_name: 'Kitchen',
+  start_url: '.',
+  display: 'standalone',
+  background_color: '#faf7f2',
+  theme_color: '#1a1208',
+  icons: [{ src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🍳</text></svg>', sizes: '192x192', type: 'image/svg+xml' }]
+};
+const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+const manifestUrl = URL.createObjectURL(blob);
+const link = document.createElement('link');
+link.rel = 'manifest';
+link.href = manifestUrl;
+document.head.appendChild(link);
+
+// ── Seed demo data if empty ────────────────────────────────────────────────────
+
+if (state.items.length === 0) {
+  addItem('Unsalted butter', { quantity: '2 sticks', category: 'Dairy & Eggs', recipes: ['Brown Butter Chocolate Chip Cookies'] });
+  addItem('All-purpose flour', { quantity: '2¼ cups', category: 'Pantry & Dry Goods', recipes: ['Brown Butter Chocolate Chip Cookies'] });
+  addItem('Dark chocolate chips', { quantity: '2 cups', category: 'Pantry & Dry Goods', recipes: ['Brown Butter Chocolate Chip Cookies'] });
+  addItem('Brown sugar', { quantity: '1 cup packed', category: 'Pantry & Dry Goods', recipes: ['Brown Butter Chocolate Chip Cookies'] });
+  addItem('Large eggs', { quantity: '2', category: 'Dairy & Eggs', recipes: ['Brown Butter Chocolate Chip Cookies'] });
+  addItem('Flaky sea salt', { quantity: 'for topping', category: 'Spices & Condiments', recipes: ['Brown Butter Chocolate Chip Cookies'] });
+  addItem('Olive oil', { quantity: '', category: 'Spices & Condiments', urgency: 'urgent' });
+  addItem('Parmesan', { quantity: 'block', category: 'Dairy & Eggs', urgency: 'next' });
+}
+
+// ── Image scan ────────────────────────────────────────────────────────────────
+
+let imgFiles = []; // up to 3 File objects
+let parsedIngredients = []; // [{name, quantity, category}]
+
+const imgScanModal = document.getElementById('imgScanModal');
+const imgFileInput = document.getElementById('imgFileInput');
+const imgPreviews = document.getElementById('imgPreviews');
+const imgParseStatus = document.getElementById('imgParseStatus');
+const imgResults = document.getElementById('imgResults');
+const imgResultList = document.getElementById('imgResultList');
+const imgPickBtn = document.getElementById('imgPickBtn');
+const imgStatusText = document.getElementById('imgStatusText');
+
+document.getElementById('imgScanBtn').addEventListener('click', () => {
+  resetImgModal();
+  imgScanModal.classList.add('open');
+});
+
+imgScanModal.addEventListener('click', (e) => {
+  if (e.target === imgScanModal) closeImgModal();
+});
+
+imgPickBtn.addEventListener('click', () => {
+  imgFileInput.value = '';
+  imgFileInput.click();
+});
+
+imgFileInput.addEventListener('change', async () => {
+  const selected = Array.from(imgFileInput.files).slice(0, 3);
+  if (!selected.length) return;
+  imgFiles = selected;
+  renderImgPreviews();
+  await parseImages();
+});
+
+function resetImgModal() {
+  imgFiles = [];
+  parsedIngredients = [];
+  imgPreviews.innerHTML = '';
+  imgParseStatus.style.display = 'none';
+  imgResults.style.display = 'none';
+  imgPickBtn.style.display = 'flex';
+}
+
+function closeImgModal() {
+  imgScanModal.classList.remove('open');
+}
+
+function renderImgPreviews() {
+  imgPreviews.innerHTML = imgFiles.map((f, i) => {
+    const url = URL.createObjectURL(f);
+    return `<div class="img-thumb-wrap">
+      <img class="img-thumb" src="${url}" alt="Screenshot ${i+1}">
+      <button class="img-thumb-remove" data-idx="${i}" aria-label="Remove">✕</button>
+    </div>`;
+  }).join('');
+  imgPreviews.querySelectorAll('.img-thumb-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      imgFiles.splice(parseInt(btn.dataset.idx), 1);
+      renderImgPreviews();
+    });
+  });
+}
+
+async function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function parseImages() {
+  if (!imgFiles.length) return;
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    imgParseStatus.style.display = 'block';
+    imgStatusText.textContent = 'No API key set. Tap Settings to add one.';
+    imgPickBtn.style.display = 'none';
+    setTimeout(() => showView('settings'), 1800);
+    return;
+  }
+
+  imgPickBtn.style.display = 'none';
+  imgResults.style.display = 'none';
+  imgParseStatus.style.display = 'block';
+  imgStatusText.textContent = `Reading ${imgFiles.length} screenshot${imgFiles.length > 1 ? 's' : ''}…`;
+
+  try {
+    const imageBlocks = await Promise.all(imgFiles.map(async (f) => {
+      const b64 = await fileToBase64(f);
+      const mt = f.type || 'image/jpeg';
+      return { type: 'image', source: { type: 'base64', media_type: mt, data: b64 } };
+    }));
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            ...imageBlocks,
+            {
+              type: 'text',
+              text: `These are screenshots from a recipe. Extract every ingredient listed.
+Return ONLY a JSON array, no other text, no markdown fences. Each element:
+{"name":"ingredient name","quantity":"amount and unit or empty string","category":"one of: Produce|Dairy & Eggs|Meat & Seafood|Bakery & Bread|Pantry & Dry Goods|Canned & Jarred|Frozen|Beverages|Spices & Condiments|Household & Other"}
+If you see the same ingredient twice, combine them. Only include actual ingredients, not instructions.`
+            }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.content?.map(b => b.text || '').join('') || '';
+    const clean = text.replace(/```json|```/g, '').trim();
+    parsedIngredients = JSON.parse(clean);
+
+    renderParsedResults();
+  } catch (err) {
+    imgParseStatus.style.display = 'block';
+    imgStatusText.textContent = err.message?.includes('401') || err.message?.includes('auth')
+      ? 'Invalid API key. Check your key in Settings.'
+      : 'Could not read the images. Try again or add ingredients manually.';
+    imgPickBtn.style.display = 'flex';
+    imgPickBtn.textContent = 'Try different screenshots';
+  }
+}
+
+function renderParsedResults() {
+  imgParseStatus.style.display = 'none';
+  if (!parsedIngredients.length) {
+    imgStatusText.textContent = 'No ingredients found. Try a clearer screenshot.';
+    imgParseStatus.style.display = 'block';
+    imgPickBtn.style.display = 'flex';
+    return;
+  }
+
+  imgResultList.innerHTML = parsedIngredients.map((ing, i) => `
+    <div class="parsed-ingredient-row">
+      <input type="checkbox" checked data-idx="${i}" id="ping-${i}">
+      <label for="ping-${i}" class="parsed-ing-name" style="cursor:pointer">${escHtml(ing.name)}</label>
+      <span class="parsed-ing-qty">${escHtml(ing.quantity || '')}</span>
+    </div>
+  `).join('');
+
+  imgResults.style.display = 'block';
+}
+
+document.getElementById('imgAddAllBtn').addEventListener('click', () => {
+  const checks = imgResultList.querySelectorAll('input[type=checkbox]');
+  const recipeName = document.getElementById('imgRecipeName').value.trim();
+  let added = 0;
+  checks.forEach(cb => {
+    if (cb.checked) {
+      const ing = parsedIngredients[parseInt(cb.dataset.idx)];
+      addItem(ing.name, {
+        quantity: ing.quantity || '',
+        category: ing.category,
+        recipes: recipeName ? [recipeName] : []
+      });
+      added++;
+    }
+  });
+  closeImgModal();
+  showToast(`Added ${added} ingredient${added !== 1 ? 's' : ''}${recipeName ? ` for "${recipeName}"` : ''} ✓`);
+});
+
+// ── Best Option Advisor ───────────────────────────────────────────────────────
+
+let bestOptItemId = null;
+let bestOptPhotos = []; // File objects, max 5
+
+const bestOptModal   = document.getElementById('bestOptModal');
+const bestOptPreviews = document.getElementById('bestOptPreviews');
+const bestOptPickBtn  = document.getElementById('bestOptPickBtn');
+const bestOptFileInput = document.getElementById('bestOptFileInput');
+const bestOptStatus   = document.getElementById('bestOptStatus');
+const bestOptStatusText = document.getElementById('bestOptStatusText');
+const bestOptAnalyzeBtn = document.getElementById('bestOptAnalyzeBtn');
+const bestOptResults  = document.getElementById('bestOptResults');
+
+function openBestOptModal(id) {
+  bestOptItemId = id;
+  bestOptPhotos = [];
+  bestOptResults.style.display = 'none';
+  bestOptStatus.style.display = 'none';
+  bestOptAnalyzeBtn.style.display = 'none';
+  bestOptPickBtn.style.display = 'flex';
+  bestOptPreviews.innerHTML = '';
+
+  const item = state.items.find(i => i.id === id);
+  document.getElementById('bestOptTitle').textContent = item ? item.name : 'Find best option';
+  document.getElementById('bestOptSubtitle').textContent = 'Take up to 5 photos of products in the store. Claude will read the labels, search expert reviews, and rank them for you.';
+
+  bestOptModal.classList.add('open');
+}
+
+bestOptModal.addEventListener('click', e => {
+  if (e.target === bestOptModal) bestOptModal.classList.remove('open');
+});
+
+bestOptPickBtn.addEventListener('click', () => {
+  if (bestOptPhotos.length >= 5) { showToast('Maximum 5 photos'); return; }
+  bestOptFileInput.value = '';
+  bestOptFileInput.click();
+});
+
+bestOptFileInput.addEventListener('change', () => {
+  const file = bestOptFileInput.files[0];
+  if (!file) return;
+  if (bestOptPhotos.length >= 5) { showToast('Maximum 5 photos'); return; }
+  bestOptPhotos.push(file);
+  renderBestOptPreviews();
+  if (bestOptPhotos.length >= 5) bestOptPickBtn.style.display = 'none';
+  bestOptAnalyzeBtn.style.display = bestOptPhotos.length >= 1 ? 'block' : 'none';
+});
+
+function renderBestOptPreviews() {
+  bestOptPreviews.innerHTML = bestOptPhotos.map((f, i) => {
+    const url = URL.createObjectURL(f);
+    return `<div class="bestopt-thumb-wrap">
+      <img class="bestopt-thumb" src="${url}" alt="Product ${i+1}">
+      <button class="bestopt-thumb-remove" data-idx="${i}" aria-label="Remove">✕</button>
+    </div>`;
+  }).join('');
+  bestOptPreviews.querySelectorAll('.bestopt-thumb-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bestOptPhotos.splice(parseInt(btn.dataset.idx), 1);
+      renderBestOptPreviews();
+      bestOptPickBtn.style.display = bestOptPhotos.length < 5 ? 'flex' : 'none';
+      bestOptAnalyzeBtn.style.display = bestOptPhotos.length >= 1 ? 'block' : 'none';
+    });
+  });
+}
+
+bestOptAnalyzeBtn.addEventListener('click', async () => {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    showToast('Add your API key in Settings first');
+    setTimeout(() => showView('settings'), 1200);
+    return;
+  }
+
+  const item = state.items.find(i => i.id === bestOptItemId);
+  const ingredientName = item ? item.name : 'this ingredient';
+
+  bestOptAnalyzeBtn.style.display = 'none';
+  bestOptPickBtn.style.display = 'none';
+  bestOptResults.style.display = 'none';
+  bestOptStatus.style.display = 'block';
+
+  try {
+    // Step 1: Vision pass — identify each product from photos
+    bestOptStatusText.textContent = `Reading ${bestOptPhotos.length} product label${bestOptPhotos.length > 1 ? 's' : ''}…`;
+
+    const imageBlocks = await Promise.all(bestOptPhotos.map(async (f) => {
+      const b64 = await fileToBase64(f);
+      return { type: 'image', source: { type: 'base64', media_type: f.type || 'image/jpeg', data: b64 } };
+    }));
+
+    const visionResp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            ...imageBlocks,
+            { type: 'text', text: `These are photos of different ${ingredientName} products in a grocery store. For each product photo, identify: brand name, product name/variant, size/weight if visible, any notable claims on the label (organic, non-GMO, artisan, etc.), and key ingredients if visible. Return ONLY a JSON array, one object per photo, in order: [{"brand":"...","product":"...","size":"...","claims":["..."],"keyIngredients":"...","searchQuery":"brand + product name best review cooking"}]. If you cannot identify a product clearly, still include it with whatever you can read.` }
+          ]
+        }]
+      })
+    });
+
+    const visionData = await visionResp.json();
+    if (visionData.error) throw new Error(visionData.error.message);
+    const visionText = visionData.content.map(b => b.text || '').join('').replace(/```json|```/g, '').trim();
+    const products = JSON.parse(visionText);
+
+    // Step 2: Research + rank pass — search reviews and rank
+    bestOptStatusText.innerHTML = `Searching expert reviews…<br><span style="font-size:12px;opacity:0.7">Serious Eats · Cook's Illustrated · NYT Cooking · Wirecutter</span>`;
+
+    const productList = products.map((p, i) => `Product ${i+1}: ${p.brand} ${p.product}${p.size ? ' (' + p.size + ')' : ''}${p.claims?.length ? ' — claims: ' + p.claims.join(', ') : ''}`).join('\n');
+
+    const rankResp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{
+          role: 'user',
+          content: `I'm shopping for ${ingredientName} and photographed these products:\n\n${productList}\n\nPlease search for expert reviews of these products from authoritative cooking sources like Serious Eats, Cook's Illustrated, NYT Cooking, Wirecutter, Epicurious, and Food52. Search for each product individually if needed.\n\nThen rank all ${products.length} products from best to worst for overall quality. Return ONLY a JSON array (no markdown), ranked #1 best first:\n[{"rank":1,"productIndex":0,"brand":"...","product":"...","verdict":"2-3 sentence overall verdict","bullets":["key point 1","key point 2","key point 3"],"sources":"sites consulted"}]\n\nBase rankings on: ingredient quality, expert reviews found, brand reputation in cooking community, and any label claims. Be specific and honest — if one is clearly superior, say so.`
+        }]
+      })
+    });
+
+    const rankData = await rankResp.json();
+    if (rankData.error) throw new Error(rankData.error.message);
+
+    // Extract text from potentially multi-block response (tool use + text)
+    const rankText = rankData.content
+      .filter(b => b.type === 'text')
+      .map(b => b.text).join('')
+      .replace(/```json|```/g, '').trim();
+
+    let ranked;
+    try {
+      // Find JSON array in the response
+      const jsonMatch = rankText.match(/\[[\s\S]*\]/);
+      ranked = JSON.parse(jsonMatch ? jsonMatch[0] : rankText);
+    } catch(e) {
+      throw new Error('Could not parse rankings. Please try again.');
+    }
+
+    renderBestOptResults(ranked, products);
+
+  } catch(err) {
+    bestOptStatus.style.display = 'none';
+    bestOptStatusText.textContent = '';
+    bestOptResults.innerHTML = `<div style="text-align:center;padding:20px;color:var(--terracotta);font-size:14px;">
+      ${err.message || 'Something went wrong. Please try again.'}
+    </div>`;
+    bestOptResults.style.display = 'block';
+    bestOptPickBtn.style.display = 'flex';
+    if (bestOptPhotos.length) bestOptAnalyzeBtn.style.display = 'block';
+  }
+});
+
+function renderBestOptResults(ranked, products) {
+  bestOptStatus.style.display = 'none';
+
+  const rankLabels = ['1st', '2nd', '3rd', '4th', '5th'];
+
+  const cardsHtml = ranked.map((r, i) => {
+    const isWinner = i === 0;
+    const rankClass = `r${i + 1}`;
+    const photo = bestOptPhotos[r.productIndex];
+    const photoUrl = photo ? URL.createObjectURL(photo) : null;
+
+    const bulletsHtml = r.bullets?.length
+      ? `<ul class="bestopt-bullets">${r.bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul>`
+      : '';
+
+    const sourceHtml = r.sources
+      ? `<p class="bestopt-source">Sources: ${escHtml(r.sources)}</p>`
+      : '';
+
+    const photoHtml = photoUrl
+      ? `<img src="${photoUrl}" alt="${escHtml(r.brand)}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--parchment);flex-shrink:0;">`
+      : '';
+
+    return `<div class="bestopt-card ${isWinner ? 'winner' : ''}">
+      <div class="bestopt-card-header">
+        <div class="bestopt-rank ${rankClass}">${rankLabels[i] || (i+1)}</div>
+        ${photoHtml}
+        <div class="bestopt-product-name">${escHtml(r.brand)} ${escHtml(r.product)}</div>
+        ${isWinner ? '<span class="bestopt-winner-badge">⭐ Best pick</span>' : ''}
+      </div>
+      <div class="bestopt-card-body">
+        <p class="bestopt-verdict">${escHtml(r.verdict)}</p>
+        ${bulletsHtml}
+        ${sourceHtml}
+      </div>
+    </div>`;
+  }).join('');
+
+  bestOptResults.innerHTML = `
+    <p style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-ghost);margin-bottom:12px;">Ranked by quality</p>
+    ${cardsHtml}
+    <p style="font-size:11px;color:var(--ink-ghost);margin-top:12px;line-height:1.6;text-align:center;">Rankings based on expert reviews &amp; label analysis. Always verify with your own taste!</p>
+  `;
+  bestOptResults.style.display = 'block';
+
+  // Scroll sheet to show results
+  document.getElementById('bestOptSheet').scrollTop = 0;
+}
+
+// ── Brand Name Advisor ────────────────────────────────────────────────────────
+
+let brandOptItemId = null;
+
+const brandOptModal      = document.getElementById('brandOptModal');
+const brandOptInput      = document.getElementById('brandOptInput');
+const brandOptCount      = document.getElementById('brandOptCount');
+const brandOptAnalyzeBtn = document.getElementById('brandOptAnalyzeBtn');
+const brandOptStatus     = document.getElementById('brandOptStatus');
+const brandOptStatusText = document.getElementById('brandOptStatusText');
+const brandOptResults    = document.getElementById('brandOptResults');
+
+function openBrandOptModal(id) {
+  brandOptItemId = id;
+  brandOptInput.value = '';
+  brandOptCount.textContent = '0 / 5 brands';
+  brandOptResults.style.display = 'none';
+  brandOptStatus.style.display = 'none';
+  brandOptAnalyzeBtn.style.display = 'block';
+
+  const item = state.items.find(i => i.id === id);
+  document.getElementById('brandOptTitle').textContent = item ? item.name : 'Find best option';
+
+  brandOptModal.classList.add('open');
+  setTimeout(() => brandOptInput.focus(), 350);
+}
+
+brandOptModal.addEventListener('click', e => {
+  if (e.target === brandOptModal) brandOptModal.classList.remove('open');
+});
+
+// Live brand count
+brandOptInput.addEventListener('input', () => {
+  const brands = parseBrands(brandOptInput.value);
+  const count = Math.min(brands.length, 5);
+  brandOptCount.textContent = `${count} / 5 brands`;
+  brandOptCount.style.color = count > 5 ? 'var(--terracotta)' : 'var(--ink-ghost)';
+});
+
+function parseBrands(text) {
+  return text.split(',').map(b => b.trim()).filter(b => b.length > 0).slice(0, 5);
+}
+
+brandOptAnalyzeBtn.addEventListener('click', async () => {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    showToast('Add your API key in Settings first');
+    setTimeout(() => showView('settings'), 1200);
+    return;
+  }
+
+  const brands = parseBrands(brandOptInput.value);
+  if (!brands.length) { showToast('Enter at least one brand name'); return; }
+
+  const item = state.items.find(i => i.id === brandOptItemId);
+  const ingredientName = item ? item.name : 'this ingredient';
+
+  brandOptAnalyzeBtn.style.display = 'none';
+  brandOptResults.style.display = 'none';
+  brandOptStatus.style.display = 'block';
+  brandOptStatusText.innerHTML = `Searching expert reviews for ${brands.length} brand${brands.length > 1 ? 's' : ''}…<br><span style="font-size:12px;opacity:0.7">Serious Eats · Cook's Illustrated · NYT Cooking · Wirecutter</span>`;
+
+  try {
+    const brandList = brands.map((b, i) => `Brand ${i + 1}: ${b}`).join('\n');
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{
+          role: 'user',
+          content: `I'm shopping for ${ingredientName} and want to compare these brands:\n\n${brandList}\n\nPlease search for expert reviews of each brand's ${ingredientName} from authoritative cooking sources: Serious Eats, Cook's Illustrated, NYT Cooking, Wirecutter, Epicurious, Food52, Bon Appétit. Search each brand individually if needed.\n\nThen rank all ${brands.length} brands from best to worst for overall quality. Return ONLY a JSON array (no markdown), ranked #1 best first:\n[{"rank":1,"brand":"...","verdict":"2-3 sentence overall verdict on this brand's ${ingredientName}","bullets":["specific quality point","what sets it apart or holds it back","any notable use cases or caveats"],"sources":"sites consulted"}]\n\nBe specific, honest, and direct. If one is clearly the best, say so and explain why. Include what real cooks and critics say about each.`
+        }]
+      })
+    });
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const rawText = data.content
+      .filter(b => b.type === 'text')
+      .map(b => b.text).join('')
+      .replace(/```json|```/g, '').trim();
+
+    let ranked;
+    try {
+      const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+      ranked = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+    } catch(e) {
+      throw new Error('Could not parse rankings — please try again.');
+    }
+
+    renderBrandOptResults(ranked);
+
+  } catch(err) {
+    brandOptStatus.style.display = 'none';
+    brandOptResults.innerHTML = `<div style="text-align:center;padding:20px;color:var(--terracotta);font-size:14px;">
+      ${escHtml(err.message || 'Something went wrong. Please try again.')}
+    </div>`;
+    brandOptResults.style.display = 'block';
+    brandOptAnalyzeBtn.style.display = 'block';
+  }
+});
+
+function renderBrandOptResults(ranked) {
+  brandOptStatus.style.display = 'none';
+  const rankLabels = ['1st', '2nd', '3rd', '4th', '5th'];
+
+  const cardsHtml = ranked.map((r, i) => {
+    const isWinner = i === 0;
+    const rankClass = `r${i + 1}`;
+    const bulletsHtml = r.bullets?.length
+      ? `<ul class="bestopt-bullets">${r.bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul>`
+      : '';
+    const sourceHtml = r.sources
+      ? `<p class="bestopt-source">Sources: ${escHtml(r.sources)}</p>`
+      : '';
+
+    return `<div class="bestopt-card ${isWinner ? 'winner' : ''}">
+      <div class="bestopt-card-header">
+        <div class="bestopt-rank ${rankClass}">${rankLabels[i] || (i + 1)}</div>
+        <div class="bestopt-product-name">${escHtml(r.brand)}</div>
+        ${isWinner ? '<span class="bestopt-winner-badge">⭐ Best pick</span>' : ''}
+      </div>
+      <div class="bestopt-card-body">
+        <p class="bestopt-verdict">${escHtml(r.verdict)}</p>
+        ${bulletsHtml}
+        ${sourceHtml}
+      </div>
+    </div>`;
+  }).join('');
+
+  brandOptResults.innerHTML = `
+    <p style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-ghost);margin-bottom:12px;">Ranked by quality</p>
+    ${cardsHtml}
+    <p style="font-size:11px;color:var(--ink-ghost);margin-top:12px;line-height:1.6;text-align:center;">Rankings based on expert reviews. Always taste for yourself!</p>
+  `;
+  brandOptResults.style.display = 'block';
+  document.getElementById('brandOptSheet').scrollTop = 0;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+// Settings view needs absolute positioning within .app
+document.querySelector('.app').style.position = 'relative';
+
+// Show alert dot if no API key
+if (!getApiKey()) {
+  document.getElementById('settingsAlert').style.display = 'block';
+}
+
+render();
+</script>
+</body>
+</html>
