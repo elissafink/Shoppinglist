@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-title" content="Kitchen">
 <meta name="theme-color" content="#1a1208">
 <title>Kitchen Companion</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧑🏻‍🍳</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧑🏻‍🍳</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -730,6 +732,65 @@ html, body {
 }
 .recipe-add-btn { color: var(--terracotta); border-color: var(--terra-light); background: var(--terra-light); }
 .recipe-delete-btn:active { background: #fdeaea; color: #c0392b; }
+
+/* Share format buttons */
+.share-fmt-btn {
+  flex: 1;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--parchment);
+  background: var(--warm-white);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.share-fmt-btn.active {
+  background: var(--ink);
+  color: white;
+  border-color: var(--ink);
+  font-weight: 500;
+}
+.recipe-detail-section {
+  margin-bottom: 16px;
+}
+.recipe-detail-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+  margin-bottom: 6px;
+}
+.recipe-detail-body {
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.7;
+  background: var(--warm-white);
+  border-radius: 10px;
+  padding: 12px 14px;
+  border: 0.5px solid var(--parchment);
+  white-space: pre-wrap;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.recipe-notes-area {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--parchment);
+  background: var(--cream);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  min-height: 100px;
+  transition: border-color 0.15s;
+}
+.recipe-notes-area:focus { border-color: var(--ink-ghost); }
 .bestopt-card {
   border-radius: 12px;
   border: 1px solid var(--parchment);
@@ -870,6 +931,9 @@ html, body {
     <div class="header-top">
       <span class="app-wordmark">Kitchen Companion</span>
       <div class="header-actions">
+        <button class="icon-btn" id="shareListBtn" title="Share list">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        </button>
         <button class="icon-btn" id="clearCheckedBtn" title="Clear checked" style="display:none">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
@@ -1201,6 +1265,95 @@ html, body {
         <button id="subChatSendBtn" style="height:40px;padding:0 14px;border-radius:10px;border:none;background:var(--sage-dark);color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">Send</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Recipe detail modal -->
+<div class="modal-overlay" id="recipeDetailModal">
+  <div class="modal-sheet" id="recipeDetailSheet" style="max-height:94vh;">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;">
+      <h2 class="modal-title" id="recipeDetailName" style="margin-bottom:0;font-size:20px;flex:1;line-height:1.3;"></h2>
+      <button onclick="document.getElementById('recipeDetailModal').classList.remove('open')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--parchment);color:var(--ink-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">✕</button>
+    </div>
+    <p id="recipeDetailMeta" style="font-size:12px;color:var(--ink-muted);margin-bottom:16px;"></p>
+
+    <!-- Recipe text -->
+    <div class="recipe-detail-section" id="recipeDetailTextSection">
+      <p class="recipe-detail-label">Recipe</p>
+      <div class="recipe-detail-body" id="recipeDetailText"></div>
+    </div>
+
+    <!-- Ingredients summary -->
+    <div class="recipe-detail-section">
+      <p class="recipe-detail-label">Ingredients</p>
+      <div id="recipeDetailIngredients" style="background:var(--warm-white);border-radius:10px;border:0.5px solid var(--parchment);padding:10px 14px;"></div>
+    </div>
+
+    <!-- Notes -->
+    <div class="recipe-detail-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <p class="recipe-detail-label" style="margin-bottom:0;">My notes</p>
+        <button id="recipeDetailCopyNotes" style="background:none;border:none;font-size:12px;color:var(--terracotta);font-weight:500;cursor:pointer;padding:0;display:none;">Copy notes</button>
+      </div>
+      <textarea class="recipe-notes-area" id="recipeDetailNotes" placeholder="Add your notes here — substitutions you made, tweaks, what worked, what to try next time…"></textarea>
+      <button id="recipeDetailSaveNotes" style="margin-top:6px;background:none;border:none;font-size:13px;color:var(--ink-muted);cursor:pointer;padding:2px 0;display:none;">Save notes</button>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button id="recipeDetailAddBtn" style="flex:1;height:48px;border-radius:12px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;">Add to shopping list</button>
+      <button id="recipeDetailDeleteBtn" style="width:48px;height:48px;border-radius:12px;border:0.5px solid var(--parchment);background:var(--warm-white);color:var(--ink-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Share list modal -->
+<div class="modal-overlay" id="shareModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h2 class="modal-title" style="margin-bottom:0;">Share shopping list</h2>
+      <button onclick="document.getElementById('shareModal').classList.remove('open')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--parchment);color:var(--ink-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+
+    <!-- Format options -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <button class="share-fmt-btn active" data-fmt="grouped">By aisle</button>
+      <button class="share-fmt-btn" data-fmt="recipe">By recipe</button>
+      <button class="share-fmt-btn" data-fmt="simple">Simple list</button>
+    </div>
+
+    <!-- Include options -->
+    <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted);cursor:pointer;">
+        <input type="checkbox" id="shareIncludeChecked" style="accent-color:var(--terracotta);"> Include checked items
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted);cursor:pointer;">
+        <input type="checkbox" id="shareIncludeRecipes" checked style="accent-color:var(--terracotta);"> Show recipe names
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-muted);cursor:pointer;">
+        <input type="checkbox" id="shareIncludeStore" style="accent-color:var(--terracotta);"> Show store tags
+      </label>
+    </div>
+
+    <!-- Preview -->
+    <div style="margin-bottom:14px;">
+      <p style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-ghost);margin-bottom:6px;">Preview</p>
+      <div id="sharePreview" style="background:var(--warm-white);border:0.5px solid var(--parchment);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--ink);line-height:1.8;max-height:200px;overflow-y:auto;white-space:pre-wrap;font-family:'DM Sans',sans-serif;"></div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:8px;">
+      <button id="shareNativeBtn" style="flex:1;height:48px;border-radius:12px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Send / Share
+      </button>
+      <button id="shareCopyBtn" style="height:48px;padding:0 18px;border-radius:12px;border:1px solid var(--parchment);background:var(--warm-white);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;">Copy</button>
+    </div>
+    <p style="font-size:12px;color:var(--ink-ghost);text-align:center;margin-top:8px;">Send via Messages, WhatsApp, email, or any app</p>
   </div>
 </div>
 
@@ -2135,7 +2288,7 @@ const manifest = {
   display: 'standalone',
   background_color: '#faf7f2',
   theme_color: '#1a1208',
-  icons: [{ src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🍳</text></svg>', sizes: '192x192', type: 'image/svg+xml' }]
+  icons: [{ src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🧑🏻‍🍳</text></svg>', sizes: '192x192', type: 'image/svg+xml' }]
 };
 const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
 const manifestUrl = URL.createObjectURL(blob);
@@ -3074,7 +3227,7 @@ function renderRecipeLibrary() {
   }
 
   container.innerHTML = recipes.map(r => `
-    <div class="recipe-library-card" data-rid="${r.id}">
+    <div class="recipe-library-card" data-rid="${r.id}" style="cursor:pointer;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
         <div style="flex:1;min-width:0;">
           <p class="recipe-card-name">${escHtml(r.name)}</p>
@@ -3082,11 +3235,11 @@ function renderRecipeLibrary() {
           ${r.notes ? `<p class="recipe-card-notes">${escHtml(r.notes.slice(0, 80))}${r.notes.length > 80 ? '…' : ''}</p>` : ''}
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="recipe-card-btn recipe-view-btn" data-rid="${r.id}" title="View recipe" style="background:var(--parchment);border-color:var(--parchment);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
           <button class="recipe-card-btn recipe-add-btn" data-rid="${r.id}" title="Add to list">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
-          <button class="recipe-card-btn recipe-delete-btn" data-rid="${r.id}" title="Delete">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
           </button>
         </div>
       </div>
@@ -3094,9 +3247,26 @@ function renderRecipeLibrary() {
     </div>
   `).join('');
 
-  // Add to list buttons
+  // Tap card body to open detail
+  container.querySelectorAll('.recipe-library-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.recipe-card-btn')) return;
+      openRecipeDetail(parseInt(card.dataset.rid));
+    });
+  });
+
+  // View button
+  container.querySelectorAll('.recipe-view-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRecipeDetail(parseInt(btn.dataset.rid));
+    });
+  });
+
+  // Quick-add button (adds without opening detail)
   container.querySelectorAll('.recipe-add-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const rid = parseInt(btn.dataset.rid);
       const recipe = loadRecipes().find(r => r.id === rid);
       if (!recipe) return;
@@ -3107,19 +3277,116 @@ function renderRecipeLibrary() {
       showView('list');
     });
   });
-
-  // Delete buttons
-  container.querySelectorAll('.recipe-delete-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const rid = parseInt(btn.dataset.rid);
-      if (!confirm('Delete this recipe from your library?')) return;
-      const recipes = loadRecipes().filter(r => r.id !== rid);
-      saveRecipes(recipes);
-      renderRecipeLibrary();
-      showToast('Recipe deleted');
-    });
-  });
 }
+
+// ── Recipe Detail Modal ───────────────────────────────────────────────────────
+
+let detailRecipeId = null;
+
+function openRecipeDetail(rid) {
+  const recipes = loadRecipes();
+  const recipe = recipes.find(r => r.id === rid);
+  if (!recipe) return;
+  detailRecipeId = rid;
+
+  document.getElementById('recipeDetailName').textContent = recipe.name;
+  document.getElementById('recipeDetailMeta').textContent =
+    [recipe.ingredients?.length + ' ingredients',
+     (recipe.targetServings || recipe.origServings || '?') + ' servings',
+     'saved ' + timeAgo(recipe.savedAt)
+    ].join(' · ');
+
+  // Full recipe text
+  const textSection = document.getElementById('recipeDetailTextSection');
+  const fullText = (recipe.fullText || '').trim();
+  if (fullText) {
+    document.getElementById('recipeDetailText').textContent = fullText;
+    textSection.style.display = 'block';
+  } else {
+    textSection.style.display = 'none';
+  }
+
+  // Ingredients list
+  document.getElementById('recipeDetailIngredients').innerHTML =
+    (recipe.ingredients || []).map(ing =>
+      `<div style="display:flex;gap:10px;padding:6px 0;border-bottom:0.5px solid var(--parchment);">
+        <span style="font-size:13px;color:var(--ink-muted);flex-shrink:0;min-width:80px;">${escHtml(ing.quantity || '')}</span>
+        <span style="font-size:13px;color:var(--ink);">${escHtml(ing.name)}</span>
+      </div>`
+    ).join('') || '<p style="font-size:13px;color:var(--ink-ghost);">No ingredients saved.</p>';
+
+  // Notes
+  const notesArea = document.getElementById('recipeDetailNotes');
+  const copyBtn   = document.getElementById('recipeDetailCopyNotes');
+  const saveBtn   = document.getElementById('recipeDetailSaveNotes');
+  notesArea.value = recipe.notes || '';
+  copyBtn.style.display  = recipe.notes ? 'block' : 'none';
+  saveBtn.style.display  = 'none';
+
+  document.getElementById('recipeDetailModal').classList.add('open');
+  document.getElementById('recipeDetailSheet').scrollTop = 0;
+}
+
+// Notes: show Save when typing, show Copy when there's content
+document.getElementById('recipeDetailNotes').addEventListener('input', () => {
+  const hasContent = document.getElementById('recipeDetailNotes').value.trim().length > 0;
+  document.getElementById('recipeDetailSaveNotes').style.display = 'block';
+  document.getElementById('recipeDetailCopyNotes').style.display = hasContent ? 'block' : 'none';
+});
+
+document.getElementById('recipeDetailSaveNotes').addEventListener('click', () => {
+  if (!detailRecipeId) return;
+  const recipes = loadRecipes();
+  const idx = recipes.findIndex(r => r.id === detailRecipeId);
+  if (idx < 0) return;
+  recipes[idx].notes = document.getElementById('recipeDetailNotes').value.trim();
+  saveRecipes(recipes);
+  document.getElementById('recipeDetailSaveNotes').style.display = 'none';
+  document.getElementById('recipeDetailCopyNotes').style.display = recipes[idx].notes ? 'block' : 'none';
+  renderRecipeLibrary();
+  showToast('Notes saved ✓');
+});
+
+document.getElementById('recipeDetailCopyNotes').addEventListener('click', () => {
+  const text = document.getElementById('recipeDetailNotes').value.trim();
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Notes copied to clipboard ✓');
+  }).catch(() => {
+    // Fallback: select the text so user can copy manually
+    const area = document.getElementById('recipeDetailNotes');
+    area.select();
+    showToast('Press Copy to copy your notes');
+  });
+});
+
+document.getElementById('recipeDetailAddBtn').addEventListener('click', () => {
+  if (!detailRecipeId) return;
+  const recipe = loadRecipes().find(r => r.id === detailRecipeId);
+  if (!recipe) return;
+  recipe.ingredients.forEach(ing => {
+    addItem(ing.name, { quantity: ing.quantity, category: ing.category, recipes: [recipe.name] });
+  });
+  document.getElementById('recipeDetailModal').classList.remove('open');
+  showToast(`Added ${recipe.ingredients.length} ingredients for "${recipe.name}" ✓`);
+  showView('list');
+});
+
+document.getElementById('recipeDetailDeleteBtn').addEventListener('click', () => {
+  if (!detailRecipeId) return;
+  if (!confirm('Delete this recipe from your library?')) return;
+  const recipes = loadRecipes().filter(r => r.id !== detailRecipeId);
+  saveRecipes(recipes);
+  document.getElementById('recipeDetailModal').classList.remove('open');
+  renderRecipeLibrary();
+  showToast('Recipe deleted');
+});
+
+document.getElementById('recipeDetailModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('recipeDetailModal')) {
+    document.getElementById('recipeDetailModal').classList.remove('open');
+  }
+});
 
 function timeAgo(ts) {
   if (!ts) return '';
@@ -3360,6 +3627,172 @@ function appendSubChatMessage(role, text) {
   chatEl.appendChild(el);
   chatEl.scrollTop = chatEl.scrollHeight;
   return el;
+}
+
+// ── Share List ────────────────────────────────────────────────────────────────
+
+let shareFmt = 'grouped';
+
+document.getElementById('shareListBtn').addEventListener('click', () => {
+  updateSharePreview();
+  document.getElementById('shareModal').classList.add('open');
+});
+
+document.getElementById('shareModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('shareModal')) document.getElementById('shareModal').classList.remove('open');
+});
+
+// Format toggle
+document.querySelectorAll('.share-fmt-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.share-fmt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    shareFmt = btn.dataset.fmt;
+    updateSharePreview();
+  });
+});
+
+// Option checkboxes
+['shareIncludeChecked','shareIncludeRecipes','shareIncludeStore'].forEach(id => {
+  document.getElementById(id).addEventListener('change', updateSharePreview);
+});
+
+function buildShareText() {
+  const includeChecked  = document.getElementById('shareIncludeChecked').checked;
+  const includeRecipes  = document.getElementById('shareIncludeRecipes').checked;
+  const includeStore    = document.getElementById('shareIncludeStore').checked;
+  const items = state.items.filter(i => includeChecked || !i.checked);
+
+  if (!items.length) return 'Shopping list is empty.';
+
+  const STORE_LABELS = { grocery:'Grocery store', highend:'High-end grocery', specialty:'Specialty store', online:'Order online', other:'Other' };
+
+  const fmtItem = (item) => {
+    let line = (item.checked ? '✓ ' : '□ ');
+    if (item.quantity) line += item.quantity + ' ';
+    line += item.name;
+    const extras = [];
+    if (includeRecipes && item.recipes?.length) extras.push(item.recipes.join(', '));
+    if (includeStore && item.store) extras.push(STORE_LABELS[item.store] || item.store);
+    if (item.urgency === 'urgent') extras.push('NEED NOW');
+    else if (item.urgency === 'next') extras.push('next trip');
+    else if (item.urgency === 'pantry') extras.push('check pantry');
+    if (extras.length) line += '  (' + extras.join(' · ') + ')';
+    return line;
+  };
+
+  let text = '🛒 Shopping List\n';
+  text += new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' }) + '\n\n';
+
+  if (shareFmt === 'simple') {
+    items.forEach(i => { text += fmtItem(i) + '\n'; });
+
+  } else if (shareFmt === 'recipe') {
+    const map = {};
+    const noRecipe = [];
+    items.forEach(item => {
+      if (item.recipes?.length) {
+        item.recipes.forEach(r => { (map[r] = map[r] || []).push(item); });
+      } else { noRecipe.push(item); }
+    });
+    Object.keys(map).sort().forEach(recipe => {
+      text += '── ' + recipe + '\n';
+      map[recipe].forEach(i => { text += '  ' + fmtItem(i) + '\n'; });
+      text += '\n';
+    });
+    if (noRecipe.length) {
+      text += '── Other\n';
+      noRecipe.forEach(i => { text += '  ' + fmtItem(i) + '\n'; });
+    }
+
+  } else { // grouped by aisle
+    const urgentItems = items.filter(i => i.urgency === 'urgent');
+    const regularItems = items.filter(i => !i.urgency);
+    const pantryItems = items.filter(i => i.urgency === 'pantry');
+    const nextItems = items.filter(i => i.urgency === 'next');
+    const checkedItems = items.filter(i => i.checked);
+
+    if (urgentItems.length) {
+      text += '🔴 NEED NOW\n';
+      urgentItems.forEach(i => { text += '  ' + fmtItem(i) + '\n'; });
+      text += '\n';
+    }
+
+    // Group regular by category
+    const catMap = {};
+    regularItems.forEach(item => {
+      const cat = item.category || 'Other';
+      (catMap[cat] = catMap[cat] || []).push(item);
+    });
+    const CAT_ORDER = ['Produce','Dairy & Eggs','Meat & Seafood','Bakery & Bread','Pantry & Dry Goods','Canned & Jarred','Frozen','Beverages','Spices & Condiments','Household & Other'];
+    CAT_ORDER.forEach(cat => {
+      if (catMap[cat]?.length) {
+        text += cat + '\n';
+        catMap[cat].forEach(i => { text += '  ' + fmtItem(i) + '\n'; });
+        text += '\n';
+      }
+    });
+
+    if (pantryItems.length) {
+      text += '🔍 Check Pantry\n';
+      pantryItems.forEach(i => { text += '  ' + fmtItem(i) + '\n'; });
+      text += '\n';
+    }
+    if (nextItems.length) {
+      text += '🕐 Next Trip\n';
+      nextItems.forEach(i => { text += '  ' + fmtItem(i) + '\n'; });
+      text += '\n';
+    }
+    if (includeChecked && checkedItems.length) {
+      text += '✓ Got it\n';
+      checkedItems.forEach(i => { text += '  ' + fmtItem(i) + '\n'; });
+    }
+  }
+
+  text += '\nSent from Kitchen Companion';
+  return text.trim();
+}
+
+function updateSharePreview() {
+  document.getElementById('sharePreview').textContent = buildShareText();
+}
+
+// Native share (iOS share sheet → Messages, WhatsApp, email, etc.)
+document.getElementById('shareNativeBtn').addEventListener('click', async () => {
+  const text = buildShareText();
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Shopping List', text });
+    } catch(e) {
+      if (e.name !== 'AbortError') {
+        // User cancelled — fall back to copy
+        copyShareText(text);
+      }
+    }
+  } else {
+    // Browser doesn't support share API — copy instead
+    copyShareText(text);
+  }
+});
+
+// Copy to clipboard
+document.getElementById('shareCopyBtn').addEventListener('click', () => {
+  copyShareText(buildShareText());
+});
+
+function copyShareText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('List copied to clipboard ✓');
+    document.getElementById('shareModal').classList.remove('open');
+  }).catch(() => {
+    // Last resort: select text in preview
+    const preview = document.getElementById('sharePreview');
+    const range = document.createRange();
+    range.selectNodeContents(preview);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    showToast('Press copy to copy the list');
+  });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
