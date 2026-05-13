@@ -791,6 +791,47 @@ html, body {
   transition: border-color 0.15s;
 }
 .recipe-notes-area:focus { border-color: var(--ink-ghost); }
+
+/* Library substitution cards */
+.sub-lib-group-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+  padding: 8px 0 6px;
+  border-bottom: 0.5px solid var(--parchment);
+  margin-bottom: 8px;
+}
+.sub-lib-card {
+  background: var(--warm-white);
+  border: 0.5px solid var(--parchment);
+  border-radius: 12px;
+  padding: 13px 14px;
+  margin-bottom: 10px;
+}
+.sub-lib-card.rating-great  { border-left: 3px solid var(--sage); }
+.sub-lib-card.rating-partial { border-left: 3px solid var(--gold); }
+.sub-lib-card.rating-nope   { border-left: 3px solid var(--terracotta); }
+.sub-lib-sub-name { font-size: 15px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
+.sub-lib-meta { font-size: 12px; color: var(--ink-muted); margin-bottom: 6px; }
+.sub-lib-advice { font-size: 13px; color: var(--ink-muted); line-height: 1.6; margin-bottom: 8px; }
+.sub-lib-notes {
+  font-size: 13px; color: var(--ink); font-style: italic; line-height: 1.5;
+  background: var(--cream); border-radius: 6px; padding: 7px 10px; margin-bottom: 8px;
+}
+.sub-lib-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+.sub-lib-rating-btn {
+  font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--parchment); background: var(--cream); color: var(--ink-muted); cursor: pointer;
+}
+.sub-lib-rating-btn.active-great   { background: var(--sage-light);  color: var(--sage-dark);  border-color: var(--sage); }
+.sub-lib-rating-btn.active-partial { background: var(--gold-light);  color: var(--gold-dark);  border-color: var(--gold); }
+.sub-lib-rating-btn.active-nope    { background: var(--urgent-bg);   color: var(--terracotta); border-color: var(--urgent-border); }
+.sub-lib-delete-btn {
+  font-size: 11px; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--parchment); background: none; color: var(--ink-ghost); cursor: pointer; margin-left: auto;
+}
 .bestopt-card {
   border-radius: 12px;
   border: 1px solid var(--parchment);
@@ -997,7 +1038,18 @@ html, body {
   </div>
 </div>
 
-<!-- Recipes view -->
+<!-- Library view -->
+<div id="libraryView" style="display:none;position:absolute;top:0;left:0;right:0;background:var(--cream);z-index:50;overflow-y:auto;padding:calc(var(--safe-top) + 0px) 20px 40px;">
+  <div style="padding-top:16px;margin-bottom:20px;">
+    <button class="back-link" onclick="showView('list')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      <span>Kitchen Companion</span>
+    </button>
+    <h1 style="font-family:'Lora',serif;font-size:28px;font-weight:500;color:var(--ink);">My Substitutions</h1>
+    <p style="font-size:13px;color:var(--ink-muted);margin-top:3px;">Saved from the substitution advisor, organized by ingredient.</p>
+  </div>
+  <div id="libraryList"></div>
+</div>
 <div id="recipesView" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:var(--cream);z-index:50;display:none;flex-direction:column;">
 
   <!-- Recipes header -->
@@ -1281,6 +1333,14 @@ html, body {
     <!-- Structured results -->
     <div id="subResults" style="display:none;"></div>
 
+    <!-- Save to Library button — shown after results appear -->
+    <div id="subSaveRow" style="display:none;margin-top:10px;">
+      <button id="subSaveBtn" style="width:100%;height:42px;border-radius:10px;border:1px solid var(--sage);background:var(--sage-light);color:var(--sage-dark);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        Save to My Substitutions
+      </button>
+    </div>
+
     <!-- Follow-up chat -->
     <div id="subChat" style="display:none;margin-top:14px;border-top:0.5px solid var(--parchment);padding-top:14px;">
       <p style="font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Ask a follow-up</p>
@@ -1380,6 +1440,39 @@ html, body {
       <button id="shareCopyBtn" style="height:48px;padding:0 18px;border-radius:12px;border:1px solid var(--parchment);background:var(--warm-white);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;">Copy</button>
     </div>
     <p style="font-size:12px;color:var(--ink-ghost);text-align:center;margin-top:8px;">Send via Messages, WhatsApp, email, or any app</p>
+  </div>
+</div>
+
+<!-- Save Substitution Modal -->
+<div class="modal-overlay" id="saveSubModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h2 class="modal-title" style="margin-bottom:0;">Save substitution</h2>
+      <button onclick="document.getElementById('saveSubModal').classList.remove('open')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--parchment);color:var(--ink-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+
+    <!-- Summary -->
+    <div id="saveSubSummary" style="background:var(--sage-light);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--sage-dark);line-height:1.5;"></div>
+
+    <!-- Rating -->
+    <div style="margin-bottom:14px;">
+      <p style="font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">How did it work out?</p>
+      <div style="display:flex;gap:8px;">
+        <button class="sub-rating-btn" data-rating="great" style="flex:1;height:40px;border-radius:10px;border:1.5px solid var(--parchment);background:var(--warm-white);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink-muted);transition:all 0.15s;">⭐ Worked great</button>
+        <button class="sub-rating-btn" data-rating="partial" style="flex:1;height:40px;border-radius:10px;border:1.5px solid var(--parchment);background:var(--warm-white);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink-muted);transition:all 0.15s;">~ Partially</button>
+        <button class="sub-rating-btn" data-rating="nope" style="flex:1;height:40px;border-radius:10px;border:1.5px solid var(--parchment);background:var(--warm-white);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink-muted);transition:all 0.15s;">✕ Didn't work</button>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">My notes <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
+      <textarea id="saveSubNotes" rows="3" placeholder="e.g. Texture was slightly denser but flavor was great. Would use 10% less next time…"
+        style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;resize:none;line-height:1.5;"></textarea>
+    </div>
+
+    <button id="saveSubConfirmBtn" style="width:100%;height:48px;border-radius:12px;border:none;background:var(--sage-dark);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;">Save to My Substitutions</button>
   </div>
 </div>
 
@@ -2268,6 +2361,7 @@ if (existingKey) {
 
 const settingsView = document.getElementById('settingsView');
 const recipesView  = document.getElementById('recipesView');
+const libraryView  = document.getElementById('libraryView');
 const listHeader   = document.querySelector('.header');
 const listScroll   = document.getElementById('listScroll');
 const bottomAddRow = document.querySelector('.add-row');
@@ -2276,12 +2370,11 @@ function showView(view) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.nav-btn[data-view="${view}"]`).classList.add('active');
 
-  // Measure actual bottom bar height so sub-views stop above it
   const bottomBarH = document.querySelector('.bottom-bar').offsetHeight;
 
-  // Hide all
   settingsView.style.display  = 'none';
   recipesView.style.display   = 'none';
+  libraryView.style.display   = 'none';
   listHeader.style.display    = 'block';
   listScroll.style.display    = 'block';
   bottomAddRow.style.display  = 'flex';
@@ -2301,8 +2394,12 @@ function showView(view) {
     recipesView.style.bottom   = bottomBarH + 'px';
     renderRecipeLibrary();
   } else if (view === 'library') {
-    showToast('Library coming soon!');
-    setTimeout(() => showView('list'), 1800);
+    listHeader.style.display   = 'none';
+    listScroll.style.display   = 'none';
+    bottomAddRow.style.display = 'none';
+    libraryView.style.display  = 'block';
+    libraryView.style.bottom   = bottomBarH + 'px';
+    renderSubLibrary();
   }
 }
 
@@ -3501,6 +3598,7 @@ function openSubModal(ingredient, quantity, recipe) {
   document.getElementById('subUserIdea').value = '';
   document.getElementById('subResults').style.display = 'none';
   document.getElementById('subResults').innerHTML = '';
+  document.getElementById('subSaveRow').style.display = 'none';
   document.getElementById('subStatus').style.display = 'none';
   document.getElementById('subChat').style.display = 'none';
   document.getElementById('subChatMessages').innerHTML = '';
@@ -3640,6 +3738,15 @@ function renderSubResults(reply, userIdea) {
   document.getElementById('subResults').style.display = 'block';
   document.getElementById('subChat').style.display = 'block';
   document.getElementById('subSheet').scrollTop = 0;
+
+  // Show Save button with the advice text captured
+  showSubSaveButton(
+    subContext.ingredient,
+    subContext.quantity,
+    subContext.recipe,
+    userIdea,
+    reply
+  );
 }
 
   let html = '';
@@ -3870,6 +3977,191 @@ function copyShareText(text) {
     window.getSelection().removeAllRanges();
     window.getSelection().addRange(range);
     showToast('Press copy to copy the list');
+  });
+}
+
+// ── Substitution Library ──────────────────────────────────────────────────────
+
+function loadSubLibrary() {
+  try { return JSON.parse(localStorage.getItem('kc_sub_library_v1') || '[]'); } catch(e) { return []; }
+}
+function saveSubLibrary(subs) {
+  try { localStorage.setItem('kc_sub_library_v1', JSON.stringify(subs)); } catch(e) {}
+}
+
+// Current save context — set when Save button is tapped
+let pendingSubSave = null;
+let saveSubRating = null;
+
+// Show Save button after results render
+function showSubSaveButton(ingredient, quantity, recipe, ideaUsed, adviceText) {
+  pendingSubSave = { ingredient, quantity, recipe, ideaUsed, adviceText };
+  document.getElementById('subSaveRow').style.display = 'block';
+}
+
+document.getElementById('subSaveBtn').addEventListener('click', () => {
+  if (!pendingSubSave) return;
+  // Populate summary
+  const { ingredient, quantity, recipe, ideaUsed } = pendingSubSave;
+  document.getElementById('saveSubSummary').innerHTML =
+    '<strong>' + escHtml(ideaUsed || 'Claude\'s recommendations') + '</strong>'
+    + ' for ' + escHtml(quantity ? quantity + ' ' : '') + escHtml(ingredient)
+    + (recipe ? ' <span style="color:var(--sage-dark);">in ' + escHtml(recipe) + '</span>' : '');
+  // Reset state
+  saveSubRating = null;
+  document.getElementById('saveSubNotes').value = '';
+  document.querySelectorAll('.sub-rating-btn').forEach(b => {
+    b.style.background = 'var(--warm-white)';
+    b.style.color = 'var(--ink-muted)';
+    b.style.borderColor = 'var(--parchment)';
+  });
+  document.getElementById('saveSubModal').classList.add('open');
+});
+
+document.getElementById('saveSubModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('saveSubModal')) document.getElementById('saveSubModal').classList.remove('open');
+});
+
+// Rating buttons in save modal
+const ratingStyles = {
+  great:   { bg: 'var(--sage-light)',  color: 'var(--sage-dark)',  border: 'var(--sage)' },
+  partial: { bg: 'var(--gold-light)',  color: 'var(--gold-dark)',  border: 'var(--gold)' },
+  nope:    { bg: 'var(--urgent-bg)',   color: 'var(--terracotta)', border: 'var(--urgent-border)' }
+};
+document.querySelectorAll('.sub-rating-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    saveSubRating = btn.dataset.rating;
+    document.querySelectorAll('.sub-rating-btn').forEach(b => {
+      b.style.background = 'var(--warm-white)';
+      b.style.color = 'var(--ink-muted)';
+      b.style.borderColor = 'var(--parchment)';
+    });
+    const s = ratingStyles[saveSubRating];
+    btn.style.background = s.bg;
+    btn.style.color = s.color;
+    btn.style.borderColor = s.border;
+  });
+});
+
+document.getElementById('saveSubConfirmBtn').addEventListener('click', () => {
+  if (!pendingSubSave) return;
+  const subs = loadSubLibrary();
+  const entry = {
+    id: Date.now(),
+    ingredient: pendingSubSave.ingredient,
+    quantity: pendingSubSave.quantity || '',
+    recipe: pendingSubSave.recipe || '',
+    ideaUsed: pendingSubSave.ideaUsed || '',
+    adviceText: pendingSubSave.adviceText || '',
+    rating: saveSubRating || null,
+    notes: document.getElementById('saveSubNotes').value.trim(),
+    savedAt: Date.now()
+  };
+  subs.unshift(entry);
+  saveSubLibrary(subs);
+  document.getElementById('saveSubModal').classList.remove('open');
+  document.getElementById('subSaveRow').style.display = 'none';
+  pendingSubSave = null;
+  showToast('Saved to My Substitutions ✓');
+});
+
+// ── Render substitution library ───────────────────────────────────────────────
+
+function renderSubLibrary() {
+  const subs = loadSubLibrary();
+  const container = document.getElementById('libraryList');
+
+  if (!subs.length) {
+    container.innerHTML = `<div class="empty-state" style="padding-top:40px;">
+      <div class="empty-icon">🔄</div>
+      <p>No saved substitutions yet</p>
+      <p class="empty-hint">Use the substitution advisor on any ingredient,<br>then tap "Save to My Substitutions."</p>
+    </div>`;
+    return;
+  }
+
+  // Group by ingredient name
+  const groups = {};
+  subs.forEach(s => {
+    const key = s.ingredient.toLowerCase();
+    if (!groups[key]) groups[key] = { label: s.ingredient, items: [] };
+    groups[key].items.push(s);
+  });
+
+  const ratingLabel = { great: '⭐ Worked great', partial: '~ Worked partially', nope: '✕ Didn\'t work' };
+  const ratingClass = { great: 'rating-great', partial: 'rating-partial', nope: 'rating-nope' };
+
+  container.innerHTML = Object.values(groups).map(group => {
+    const cards = group.items.map(s => {
+      const rClass = s.rating ? ratingClass[s.rating] : '';
+      const metaParts = [];
+      if (s.recipe) metaParts.push(s.recipe);
+      metaParts.push(timeAgo(s.savedAt));
+
+      return `<div class="sub-lib-card ${rClass}" data-sid="${s.id}">
+        <p class="sub-lib-sub-name">${escHtml(s.ideaUsed || 'Claude\'s recommendations')}</p>
+        <p class="sub-lib-meta">${escHtml(metaParts.join(' · '))}</p>
+        ${s.adviceText ? `<p class="sub-lib-advice">${escHtml(s.adviceText.slice(0, 220))}${s.adviceText.length > 220 ? '…' : ''}</p>` : ''}
+        ${s.notes ? `<div class="sub-lib-notes">${escHtml(s.notes)}</div>` : ''}
+        <div class="sub-lib-actions">
+          <button class="sub-lib-rating-btn ${s.rating === 'great'   ? 'active-great'   : ''}" data-sid="${s.id}" data-rating="great">⭐ Great</button>
+          <button class="sub-lib-rating-btn ${s.rating === 'partial' ? 'active-partial' : ''}" data-sid="${s.id}" data-rating="partial">~ Partial</button>
+          <button class="sub-lib-rating-btn ${s.rating === 'nope'   ? 'active-nope'    : ''}" data-sid="${s.id}" data-rating="nope">✕ Nope</button>
+          <button class="sub-lib-delete-btn" data-sid="${s.id}">Delete</button>
+        </div>
+        <div class="sub-lib-note-edit" style="margin-top:8px;">
+          <textarea data-sid="${s.id}" class="sub-lib-note-area" rows="2" placeholder="Add a note about how it went…"
+            style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;resize:none;line-height:1.5;">${escHtml(s.notes || '')}</textarea>
+          <button class="sub-lib-note-save" data-sid="${s.id}" style="margin-top:4px;background:none;border:none;font-size:12px;color:var(--terracotta);cursor:pointer;font-weight:500;padding:0;">Save note</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:20px;">
+      <p class="sub-lib-group-label">${escHtml(group.label)}</p>
+      ${cards}
+    </div>`;
+  }).join('');
+
+  // Rating buttons
+  container.querySelectorAll('.sub-lib-rating-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sid = parseInt(btn.dataset.sid);
+      const rating = btn.dataset.rating;
+      const subs = loadSubLibrary();
+      const idx = subs.findIndex(s => s.id === sid);
+      if (idx < 0) return;
+      subs[idx].rating = subs[idx].rating === rating ? null : rating; // toggle
+      saveSubLibrary(subs);
+      renderSubLibrary();
+    });
+  });
+
+  // Save note buttons
+  container.querySelectorAll('.sub-lib-note-save').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sid = parseInt(btn.dataset.sid);
+      const area = container.querySelector('.sub-lib-note-area[data-sid="' + sid + '"]');
+      const subs = loadSubLibrary();
+      const idx = subs.findIndex(s => s.id === sid);
+      if (idx < 0 || !area) return;
+      subs[idx].notes = area.value.trim();
+      saveSubLibrary(subs);
+      renderSubLibrary();
+      showToast('Note saved ✓');
+    });
+  });
+
+  // Delete buttons
+  container.querySelectorAll('.sub-lib-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sid = parseInt(btn.dataset.sid);
+      if (!confirm('Delete this substitution?')) return;
+      const subs = loadSubLibrary().filter(s => s.id !== sid);
+      saveSubLibrary(subs);
+      renderSubLibrary();
+      showToast('Deleted');
+    });
   });
 }
 
