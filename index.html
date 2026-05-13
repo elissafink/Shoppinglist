@@ -1062,7 +1062,11 @@ html, body {
       </button>
     </div>
 
-    <button id="apiKeySaveBtn" style="width:100%;height:44px;border-radius:10px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:background 0.15s;">Save key</button>
+    <div style="display:flex;gap:8px;">
+      <button id="apiKeySaveBtn" style="flex:1;height:44px;border-radius:10px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:background 0.15s;">Save key</button>
+      <button id="apiKeyTestBtn" style="height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--parchment);background:var(--warm-white);color:var(--ink-muted);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;">Test key</button>
+    </div>
+    <div id="apiKeyTestResult" style="display:none;margin-top:8px;padding:8px 12px;border-radius:8px;font-size:13px;line-height:1.5;"></div>
   </div>
 
   <!-- How to get a key -->
@@ -1929,6 +1933,75 @@ document.getElementById('apiKeySaveBtn').addEventListener('click', () => {
   document.getElementById('apiKeyInput').type = 'password';
   updateApiKeyStatus();
   showToast('API key saved ✓');
+});
+
+// Test key
+document.getElementById('apiKeyTestBtn').addEventListener('click', async () => {
+  const resultEl = document.getElementById('apiKeyTestResult');
+
+  // Use key from input field if filled, otherwise use saved key
+  const inputVal = document.getElementById('apiKeyInput').value.trim();
+  const keyToTest = inputVal || getApiKey();
+
+  if (!keyToTest) {
+    resultEl.style.display = 'block';
+    resultEl.style.background = 'var(--urgent-bg)';
+    resultEl.style.color = 'var(--terracotta)';
+    resultEl.textContent = 'No key to test — enter a key above first.';
+    return;
+  }
+
+  const btn = document.getElementById('apiKeyTestBtn');
+  btn.textContent = 'Testing…';
+  btn.disabled = true;
+  resultEl.style.display = 'none';
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': keyToTest,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 20,
+        messages: [{ role: 'user', content: 'Reply with just the word: working' }]
+      })
+    });
+
+    const data = await resp.json();
+
+    if (data.error) {
+      resultEl.style.background = 'var(--urgent-bg)';
+      resultEl.style.color = 'var(--terracotta)';
+      resultEl.textContent = '✕ ' + (data.error.message || data.error.type || 'Key rejected by API');
+    } else if (data.content?.length) {
+      resultEl.style.background = 'var(--sage-light)';
+      resultEl.style.color = 'var(--sage-dark)';
+      resultEl.textContent = '✓ Key is working — AI features are ready to use.';
+      // Auto-save if it was in the input field and valid
+      if (inputVal && inputVal.startsWith('sk-ant-')) {
+        saveApiKey(inputVal);
+        document.getElementById('apiKeyInput').value = '';
+        updateApiKeyStatus();
+      }
+    } else {
+      resultEl.style.background = 'var(--gold-light)';
+      resultEl.style.color = 'var(--gold-dark)';
+      resultEl.textContent = '? Unexpected response — try again.';
+    }
+  } catch(err) {
+    resultEl.style.background = 'var(--urgent-bg)';
+    resultEl.style.color = 'var(--terracotta)';
+    resultEl.textContent = '✕ Network error: ' + (err.message || 'Could not reach API');
+  }
+
+  resultEl.style.display = 'block';
+  btn.textContent = 'Test key';
+  btn.disabled = false;
 });
 
 // Clear data
@@ -3016,9 +3089,6 @@ async function runSubAnalysis() {
     });
 
     const data = await resp.json();
-
-    // DEBUG: show exactly what came back
-    console.log('API response:', JSON.stringify(data, null, 2));
 
     // Show raw API error clearly if present
     if (data.error) {
