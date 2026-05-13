@@ -2941,75 +2941,111 @@ async function fetchRecipeUrl() {
   document.getElementById('diagOutput').style.display = 'none';
   document.getElementById('diagOutput').textContent = '';
 
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 3000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{
-          role: 'user',
-          content: 'Please fetch this URL and extract the recipe from it: ' + url + '\n\n'
-            + 'IMPORTANT notes:\n'
-            + '- If the page shows an "Open in app", "Stay in browser", "Use the app", or any app-redirect interstitial, describe exactly what you see in the diagnostic field.\n'
-            + '- If the URL contains an unlocked_article_code or gift parameter, honor it — try to read the actual page content.\n'
-            + '- If you see a real recipe, extract it fully including all ingredients with quantities and all instructions.\n\n'
-            + 'Return a JSON object (no markdown):\n'
-            + '{"name":"recipe name","servings":4,"ingredients":[{"name":"ingredient","quantity":"amount + unit","category":"Produce|Dairy & Eggs|Meat & Seafood|Bakery & Bread|Pantry & Dry Goods|Canned & Jarred|Frozen|Beverages|Spices & Condiments|Household & Other"}],"fullText":"complete instructions as plain text","diagnostic":"brief note on what you saw — recipe found / app redirect / login wall / etc."}\n\n'
-            + 'If no recipe found: {"error":"blocked","diagnostic":"exact description of what you saw instead of a recipe"}'
-        }]
-      })
-    });
+  // Try multiple CORS proxies in order
+  const proxies = [
+    (u) => 'https://corsproxy.io/?' + encodeURIComponent(u),
+    (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
+    (u) => 'https://thingproxy.freeboard.io/fetch/' + u,
+  ];
 
-    const data = await resp.json();
-    if (data.error) throw new Error(data.error.message);
+  let pageText = '';
+  let proxyUsed = '';
+  let diagLog = '';
 
-    const raw = (data.content || [])
-      .filter(b => b.type === 'text')
-      .map(b => b.text).join('')
-      .replace(/```json|```/g, '').trim();
-
-    if (!raw) throw new Error('No response from API');
-
-    // Always store raw for diagnostic
-    document.getElementById('diagOutput').textContent = raw;
-
-    let parsed;
+  for (const proxyFn of proxies) {
     try {
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
-      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+      const proxyUrl = proxyFn(url);
+      proxyUsed = proxyUrl.split('?')[0];
+      showRecipeFetchStatus('Fetching via ' + proxyUsed.replace('https://','') + '…');
+
+      const resp = await fetch(proxyUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const html = await resp.text();
+
+      diagLog += 'Proxy: ' + proxyUrl + '\nStatus: ' + resp.status + '\nHTML length: ' + html.length + '\n\n';
+
+      if (html.length < 500) {
+        diagLog += 'Response too short — skipping\n\n';
+        continue;
+      }
+
+      // Parse HTML
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+
+      // Check for app-redirect interstitial
+      const bodyText = tmp.innerText || tmp.textContent || '';
+      const isInterstitial = /stay in browser|open in app|use the app|open the app|download the app/i.test(bodyText);
+      if (isInterstitial) {
+        diagLog += 'App-redirect interstitial detected\n\n';
+        continue;
+      }
+
+      // Try JSON-LD structured recipe data first (most reliable)
+      const scripts = tmp.querySelectorAll('script[type="application/ld+json"]');
+      for (const s of scripts) {
+        try {
+          const ld = JSON.parse(s.textContent);
+          const recipe = ld['@type'] === 'Recipe' ? ld
+            : Array.isArray(ld['@graph']) ? ld['@graph'].find(x => x['@type'] === 'Recipe')
+            : null;
+          if (recipe) {
+            diagLog += 'Found JSON-LD recipe: ' + (recipe.name || 'unnamed') + '\n';
+            document.getElementById('diagOutput').textContent = diagLog;
+            // Build structured data from JSON-LD
+            const ingredients = (recipe.recipeIngredient || []).map(ing => ({
+              name: ing.replace(/^\d[\d\s\/\.\-]*(?:cup|cups|tbsp|tsp|tablespoon|teaspoon|oz|ounce|pound|lb|g|gram|ml|liter|l|pinch|dash|clove|cloves|slice|slices|can|cans|package|pkg|bunch|head|heads|large|medium|small|whole|piece|pieces)s?\s+/i, '').trim(),
+              quantity: ing.match(/^[\d\s\/\.\-]+(?:cup|cups|tbsp|tsp|tablespoon|teaspoon|oz|ounce|pound|lb|g|gram|ml|liter|l|pinch|dash|clove|cloves|slice|slices|can|cans|package|pkg|bunch|head|heads|large|medium|small|whole|piece|pieces)s?/i)?.[0]?.trim() || '',
+              category: 'Pantry & Dry Goods'
+            }));
+            const fullText = Array.isArray(recipe.recipeInstructions)
+              ? recipe.recipeInstructions.map(s => typeof s === 'string' ? s : s.text || '').join('\n\n')
+              : recipe.recipeInstructions || '';
+            // Let Claude categorize ingredients since JSON-LD doesn't have that
+            showRecipeFetchStatus('Parsing ingredients…');
+            await parseRecipeText(
+              'Recipe: ' + (recipe.name || '') + '\n\nIngredients:\n' + (recipe.recipeIngredient || []).join('\n') + '\n\nInstructions:\n' + fullText,
+              url
+            );
+            hideRecipeFetchStatus();
+            return;
+          }
+        } catch(e) {}
+      }
+
+      // Fall back to extracting visible text
+      tmp.querySelectorAll('script,style,nav,footer,header,aside,[class*="nav"],[class*="menu"],[class*="ad-"]').forEach(el => el.remove());
+      pageText = (tmp.innerText || tmp.textContent || '').replace(/\s{3,}/g, '\n\n').trim().slice(0, 8000);
+      diagLog += 'Extracted text length: ' + pageText.length + '\nFirst 200 chars: ' + pageText.slice(0, 200) + '\n\n';
+
+      if (pageText.length > 200) break; // got usable content
+
     } catch(e) {
-      throw new Error('paywall');
-    }
-
-    if (parsed.error === 'blocked' || parsed.error === 'paywall' || !parsed.ingredients?.length) {
-      throw new Error('paywall');
-    }
-
-    parsedRecipeData = { ...parsed, sourceUrl: url, notes: '' };
-    hideRecipeFetchStatus();
-    renderParsedRecipeEditor(parsedRecipeData);
-
-  } catch(err) {
-    hideRecipeFetchStatus();
-    if (err.message === 'paywall' || err.message?.includes('paywall') || err.message?.includes('Could not')) {
-      document.getElementById('paywallHelper').style.display = 'block';
-      document.getElementById('recipeTextInput').style.borderColor = 'var(--terracotta)';
-      document.getElementById('recipeTextInput').placeholder = 'Paste the recipe text here — just the ingredients list is enough.';
-      setTimeout(() => {
-        document.getElementById('paywallHelper').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    } else {
-      showToast('Fetch failed: ' + (err.message || 'Unknown error'));
+      diagLog += 'Proxy error: ' + e.message + '\n\n';
     }
   }
+
+  document.getElementById('diagOutput').textContent = diagLog + (pageText ? 'Page text:\n' + pageText.slice(0, 500) : 'No page text extracted');
+
+  if (!pageText || pageText.length < 150) {
+    hideRecipeFetchStatus();
+    showFailureAndClearUrl(url);
+    return;
+  }
+
+  showRecipeFetchStatus('Parsing ingredients…');
+  await parseRecipeText(pageText, url);
+}
+
+function showFailureAndClearUrl(attemptedUrl) {
+  // Clear the URL field so user knows this attempt failed
+  document.getElementById('recipeUrlInput').value = '';
+  // Show the helper
+  document.getElementById('paywallHelper').style.display = 'block';
+  document.getElementById('recipeTextInput').style.borderColor = 'var(--terracotta)';
+  document.getElementById('recipeTextInput').placeholder = 'Paste the recipe text here — just the ingredients list is enough.';
+  setTimeout(() => {
+    document.getElementById('paywallHelper').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
 }
 
 // Diagnostic toggle
