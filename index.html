@@ -667,7 +667,47 @@ html, body {
 .list-scroll::-webkit-scrollbar-track { background: transparent; }
 .list-scroll::-webkit-scrollbar-thumb { background: var(--parchment); border-radius: 2px; }
 
-/* Best option cards */
+/* Recipe library cards */
+.recipe-library-card {
+  background: var(--warm-white);
+  border: 0.5px solid var(--parchment);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  cursor: default;
+}
+.recipe-card-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recipe-card-meta {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+}
+.recipe-card-notes {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-style: italic;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.recipe-card-btn {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 0.5px solid var(--parchment);
+  background: var(--cream);
+  color: var(--ink-muted);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.recipe-add-btn { color: var(--terracotta); border-color: var(--terra-light); background: var(--terra-light); }
+.recipe-delete-btn:active { background: #fdeaea; color: #c0392b; }
 .bestopt-card {
   border-radius: 12px;
   border: 1px solid var(--parchment);
@@ -871,7 +911,114 @@ html, body {
   </div>
 </div>
 
-<!-- Item action modal -->
+<!-- Recipes view -->
+<div id="recipesView" style="display:none;position:absolute;inset:0;background:var(--cream);z-index:50;display:none;flex-direction:column;">
+
+  <!-- Recipes header -->
+  <div style="padding:calc(var(--safe-top) + 16px) 20px 0;flex-shrink:0;background:var(--cream);">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;">
+      <p style="font-size:11px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-muted);">Kitchen Companion</p>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h1 style="font-family:'Lora',serif;font-size:28px;font-weight:500;color:var(--ink);">Recipes</h1>
+      <button id="newRecipeBtn" style="height:36px;padding:0 14px;border-radius:999px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Import recipe
+      </button>
+    </div>
+    <!-- Recipe tabs -->
+    <div class="sort-tabs" style="margin-bottom:12px;">
+      <button class="sort-tab active" data-rtab="library">My Library</button>
+      <button class="sort-tab" data-rtab="import">Import new</button>
+    </div>
+  </div>
+
+  <!-- Library panel -->
+  <div id="recipeLibraryPanel" style="flex:1;overflow-y:auto;padding:0 20px calc(var(--safe-bottom) + 80px);">
+    <div id="recipeLibraryList"></div>
+  </div>
+
+  <!-- Import panel -->
+  <div id="recipeImportPanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px calc(var(--safe-bottom) + 80px);">
+
+    <!-- URL input -->
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Recipe URL</label>
+      <div style="display:flex;gap:8px;">
+        <input id="recipeUrlInput" type="url" placeholder="https://cooking.nytimes.com/recipes/…" autocomplete="off" autocorrect="off"
+          style="flex:1;height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;">
+        <button id="recipeFetchBtn" style="height:44px;padding:0 16px;border-radius:10px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;">Fetch</button>
+      </div>
+      <p style="font-size:12px;color:var(--ink-ghost);margin-top:5px;">If the site is paywalled, paste the recipe text below instead.</p>
+    </div>
+
+    <div style="text-align:center;color:var(--ink-ghost);font-size:13px;margin:4px 0 12px;">— or paste recipe text —</div>
+
+    <!-- Text paste -->
+    <div style="margin-bottom:16px;">
+      <textarea id="recipeTextInput" rows="6" placeholder="Paste the full recipe here — ingredients, instructions, everything. Claude will parse it out."
+        style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;resize:none;line-height:1.5;"></textarea>
+      <button id="recipeParseTextBtn" style="margin-top:8px;width:100%;height:44px;border-radius:10px;border:1.5px solid var(--terracotta);background:transparent;color:var(--terracotta);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;">Parse pasted text</button>
+    </div>
+
+    <!-- Fetch status -->
+    <div id="recipeFetchStatus" style="display:none;text-align:center;padding:24px 0;">
+      <div style="width:28px;height:28px;border:3px solid var(--parchment);border-top-color:var(--terracotta);border-radius:50%;margin:0 auto 10px;animation:spin 0.8s linear infinite;"></div>
+      <p id="recipeFetchStatusText" style="font-size:14px;color:var(--ink-muted);"></p>
+    </div>
+
+    <!-- Parsed recipe editor -->
+    <div id="parsedRecipeEditor" style="display:none;">
+      <div style="background:var(--warm-white);border-radius:12px;border:0.5px solid var(--parchment);padding:16px;margin-bottom:14px;">
+
+        <!-- Recipe name -->
+        <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Recipe name</label>
+        <input id="parsedRecipeName" type="text" style="width:100%;height:40px;padding:0 10px;border-radius:8px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:15px;color:var(--ink);outline:none;margin-bottom:12px;">
+
+        <!-- Servings scaler -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <div style="flex:1;">
+            <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Original servings</label>
+            <input id="origServings" type="number" min="1" value="4" style="width:100%;height:40px;padding:0 10px;border-radius:8px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:15px;color:var(--ink);outline:none;text-align:center;">
+          </div>
+          <div style="font-size:20px;color:var(--ink-ghost);margin-top:18px;">→</div>
+          <div style="flex:1;">
+            <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">I'm making for</label>
+            <input id="targetServings" type="number" min="1" value="4" style="width:100%;height:40px;padding:0 10px;border-radius:8px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:15px;color:var(--ink);outline:none;text-align:center;">
+          </div>
+        </div>
+        <p id="scalerNote" style="font-size:12px;color:var(--ink-muted);margin-bottom:14px;display:none;"></p>
+
+        <!-- Substitution notes -->
+        <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">My substitution notes</label>
+        <textarea id="parsedRecipeNotes" rows="3" placeholder="e.g. Used Allulose instead of sugar, egg whites only, swapped AP flour for almond flour…"
+          style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;resize:none;line-height:1.5;margin-bottom:0;"></textarea>
+      </div>
+
+      <!-- Ingredients checklist -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <p style="font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;">Ingredients found</p>
+          <button id="toggleAllIngredients" style="background:none;border:none;font-size:12px;color:var(--terracotta);cursor:pointer;font-weight:500;">Deselect all</button>
+        </div>
+        <div id="parsedIngredientList"></div>
+      </div>
+
+      <!-- Full recipe text (collapsible) -->
+      <details style="margin-bottom:14px;">
+        <summary style="font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;padding:8px 0;list-style:none;display:flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          Full recipe text
+        </summary>
+        <div id="parsedRecipeFullText" style="font-size:13px;color:var(--ink-muted);line-height:1.7;padding:10px;background:var(--warm-white);border-radius:8px;margin-top:8px;white-space:pre-wrap;max-height:300px;overflow-y:auto;"></div>
+      </details>
+
+      <!-- Actions -->
+      <button id="addToListBtn" style="width:100%;height:48px;border-radius:12px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:10px;">Add to shopping list</button>
+      <button id="saveToLibraryBtn" style="width:100%;height:44px;border-radius:12px;border:1px solid var(--ink-ghost);background:transparent;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;">Save to library only</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="itemModal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -936,6 +1083,56 @@ html, body {
     <p style="font-size:14px;font-weight:500;color:var(--ink);margin-bottom:6px;">Data</p>
     <p style="font-size:13px;color:var(--ink-muted);margin-bottom:14px;">All your list items and recipe library are saved locally on this device.</p>
     <button id="clearAllDataBtn" style="background:none;border:1px solid #e8a0a0;color:#c0392b;font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 16px;border-radius:8px;cursor:pointer;">Clear all list data</button>
+  </div>
+</div>
+
+<!-- Substitution Advisor Modal -->
+<div class="modal-overlay" id="subModal">
+  <div class="modal-sheet" id="subSheet" style="max-height:94vh;">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;border-radius:9px;background:var(--sage-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sage-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </div>
+        <div>
+          <h2 class="modal-title" id="subModalTitle" style="margin-bottom:0;font-size:17px;">Substitution Advisor</h2>
+          <p id="subModalSub" style="font-size:12px;color:var(--ink-muted);margin:0;"></p>
+        </div>
+      </div>
+      <button onclick="document.getElementById('subModal').classList.remove('open')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--parchment);color:var(--ink-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+    </div>
+
+    <!-- My substitution idea -->
+    <div style="margin:14px 0 10px;">
+      <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">My substitution idea <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
+      <div style="display:flex;gap:8px;">
+        <input id="subUserIdea" type="text" placeholder="e.g. Allulose instead of sugar, egg whites only, almond flour…"
+          style="flex:1;height:42px;padding:0 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;">
+        <button id="subAnalyzeBtn" style="height:42px;padding:0 14px;border-radius:10px;border:none;background:var(--sage-dark);color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;">Analyze</button>
+      </div>
+      <p style="font-size:12px;color:var(--ink-ghost);margin-top:5px;">Leave blank to get Claude's recommendations only.</p>
+    </div>
+
+    <!-- Analysis status -->
+    <div id="subStatus" style="display:none;text-align:center;padding:20px 0;">
+      <div style="width:28px;height:28px;border:3px solid var(--parchment);border-top-color:var(--sage);border-radius:50%;margin:0 auto 10px;animation:spin 0.8s linear infinite;"></div>
+      <p style="font-size:13px;color:var(--ink-muted);">Analyzing substitution options…</p>
+    </div>
+
+    <!-- Structured results -->
+    <div id="subResults" style="display:none;"></div>
+
+    <!-- Follow-up chat -->
+    <div id="subChat" style="display:none;margin-top:14px;border-top:0.5px solid var(--parchment);padding-top:14px;">
+      <p style="font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Ask a follow-up</p>
+      <div id="subChatMessages" style="max-height:220px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:8px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input id="subChatInput" type="text" placeholder="e.g. What if I also reduce the butter by half?"
+          style="flex:1;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;">
+        <button id="subChatSendBtn" style="height:40px;padding:0 14px;border-radius:10px;border:none;background:var(--sage-dark);color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;">Send</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1467,6 +1664,10 @@ function openItemModal(id) {
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
       Find best option using brand names
     </li>
+    <li class="action-item" data-action="subadvisor">
+      <svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      Substitution advisor
+    </li>
     <li class="action-item" data-action="urgent">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       ${item.urgency === 'urgent' ? 'Remove urgent tag' : 'Mark as Need Now (urgent)'}
@@ -1499,6 +1700,7 @@ function openItemModal(id) {
       const action = el.dataset.action;
       if (action === 'bestopt') { closeModal(); openBestOptModal(id); }
       else if (action === 'brandopt') { closeModal(); openBrandOptModal(id); }
+      else if (action === 'subadvisor') { closeModal(); const it = state.items.find(i=>i.id===id); if(it) openSubModal(it.name, it.quantity, it.recipes?.[0]||''); }
       else if (action === 'urgent') { setUrgency(id, 'urgent'); closeModal(); }
       else if (action === 'next') { setUrgency(id, 'next'); closeModal(); }
       else if (action === 'pantry') { setUrgency(id, 'pantry'); closeModal(); }
@@ -1749,29 +1951,37 @@ if (existingKey) {
 // ── Nav tabs ──────────────────────────────────────────────────────────────────
 
 const settingsView = document.getElementById('settingsView');
-const listHeader = document.querySelector('.header');
-const listScroll = document.getElementById('listScroll');
+const recipesView  = document.getElementById('recipesView');
+const listHeader   = document.querySelector('.header');
+const listScroll   = document.getElementById('listScroll');
 const bottomAddRow = document.querySelector('.add-row');
 
 function showView(view) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.nav-btn[data-view="${view}"]`).classList.add('active');
 
+  // Hide all
+  settingsView.style.display  = 'none';
+  recipesView.style.display   = 'none';
+  listHeader.style.display    = 'block';
+  listScroll.style.display    = 'block';
+  bottomAddRow.style.display  = 'flex';
+
   if (view === 'settings') {
-    settingsView.style.display = 'block';
-    listHeader.style.display = 'none';
-    listScroll.style.display = 'none';
+    listHeader.style.display   = 'none';
+    listScroll.style.display   = 'none';
     bottomAddRow.style.display = 'none';
+    settingsView.style.display = 'block';
     updateApiKeyStatus();
-  } else {
-    settingsView.style.display = 'none';
-    listHeader.style.display = 'block';
-    listScroll.style.display = 'block';
-    bottomAddRow.style.display = 'flex';
-    if (view !== 'list') {
-      showToast('Recipes & Library coming in the next build!');
-      setTimeout(() => showView('list'), 1800);
-    }
+  } else if (view === 'recipes') {
+    listHeader.style.display   = 'none';
+    listScroll.style.display   = 'none';
+    bottomAddRow.style.display = 'none';
+    recipesView.style.display  = 'flex';
+    renderRecipeLibrary();
+  } else if (view === 'library') {
+    showToast('Library coming soon!');
+    setTimeout(() => showView('list'), 1800);
   }
 }
 
@@ -2362,6 +2572,600 @@ function renderBrandOptResults(ranked) {
   `;
   brandOptResults.style.display = 'block';
   document.getElementById('brandOptSheet').scrollTop = 0;
+}
+
+// ── Recipe Library ─────────────────────────────────────────────────────────────
+
+function loadRecipes() {
+  try { return JSON.parse(localStorage.getItem('kc_recipes_v1') || '[]'); } catch(e) { return []; }
+}
+function saveRecipes(recipes) {
+  try { localStorage.setItem('kc_recipes_v1', JSON.stringify(recipes)); } catch(e) {}
+}
+
+let parsedRecipeData = null; // holds current in-progress import
+
+// ── Recipe tab switching ───────────────────────────────────────────────────────
+
+document.querySelectorAll('[data-rtab]').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('[data-rtab]').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const which = tab.dataset.rtab;
+    document.getElementById('recipeLibraryPanel').style.display = which === 'library' ? 'block' : 'none';
+    document.getElementById('recipeImportPanel').style.display  = which === 'import'  ? 'block' : 'none';
+  });
+});
+
+document.getElementById('newRecipeBtn').addEventListener('click', () => {
+  document.querySelectorAll('[data-rtab]').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-rtab="import"]').classList.add('active');
+  document.getElementById('recipeLibraryPanel').style.display = 'none';
+  document.getElementById('recipeImportPanel').style.display  = 'block';
+});
+
+// ── URL fetch ─────────────────────────────────────────────────────────────────
+
+document.getElementById('recipeFetchBtn').addEventListener('click', fetchRecipeUrl);
+document.getElementById('recipeUrlInput').addEventListener('keydown', e => { if (e.key === 'Enter') fetchRecipeUrl(); });
+
+async function fetchRecipeUrl() {
+  const url = document.getElementById('recipeUrlInput').value.trim();
+  if (!url) { showToast('Enter a recipe URL'); return; }
+
+  const apiKey = getApiKey();
+  if (!apiKey) { showToast('Add your API key in Settings first'); setTimeout(() => showView('settings'), 1200); return; }
+
+  showRecipeFetchStatus('Fetching recipe…');
+
+  try {
+    // Try to fetch the page via a CORS proxy
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const proxyResp = await fetch(proxyUrl);
+    const proxyData = await proxyResp.json();
+
+    let pageText = '';
+    if (proxyData.contents) {
+      // Strip HTML tags to get readable text
+      const tmp = document.createElement('div');
+      tmp.innerHTML = proxyData.contents;
+      // Remove scripts and styles
+      tmp.querySelectorAll('script,style,nav,footer,header,aside').forEach(el => el.remove());
+      pageText = tmp.innerText || tmp.textContent || '';
+      pageText = pageText.replace(/\s{3,}/g, '\n\n').trim().slice(0, 6000);
+    }
+
+    if (!pageText || pageText.length < 100) {
+      throw new Error('paywall');
+    }
+
+    showRecipeFetchStatus('Parsing ingredients…');
+    await parseRecipeText(pageText, url);
+
+  } catch(err) {
+    hideRecipeFetchStatus();
+    if (err.message === 'paywall' || err.message?.includes('fetch')) {
+      // Show paywall notice and suggest paste
+      document.getElementById('recipeTextInput').placeholder = `This site may require a login. Copy the recipe text from ${url} and paste it here.`;
+      document.getElementById('recipeTextInput').focus();
+      showToast('Could not fetch — paste the recipe text below ↓');
+    } else {
+      showToast('Fetch failed: ' + (err.message || 'Unknown error'));
+    }
+  }
+}
+
+// ── Text paste parse ───────────────────────────────────────────────────────────
+
+document.getElementById('recipeParseTextBtn').addEventListener('click', async () => {
+  const text = document.getElementById('recipeTextInput').value.trim();
+  if (!text) { showToast('Paste some recipe text first'); return; }
+  const apiKey = getApiKey();
+  if (!apiKey) { showToast('Add your API key in Settings first'); setTimeout(() => showView('settings'), 1200); return; }
+  showRecipeFetchStatus('Parsing recipe…');
+  await parseRecipeText(text, '');
+});
+
+// ── Core parse function ────────────────────────────────────────────────────────
+
+async function parseRecipeText(text, sourceUrl) {
+  const apiKey = getApiKey();
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{
+          role: 'user',
+          content: `Parse this recipe and return ONLY a JSON object (no markdown):
+{
+  "name": "recipe name",
+  "servings": <number, default 4 if unclear>,
+  "ingredients": [{"name":"...","quantity":"amount + unit","category":"Produce|Dairy & Eggs|Meat & Seafood|Bakery & Bread|Pantry & Dry Goods|Canned & Jarred|Frozen|Beverages|Spices & Condiments|Household & Other"}],
+  "fullText": "the complete recipe instructions as plain text, preserving all steps"
+}
+
+Recipe text:
+${text.slice(0, 5000)}`
+        }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = data.content.map(b => b.text || '').join('').replace(/```json|```/g, '').trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+
+    parsedRecipeData = { ...parsed, sourceUrl, notes: '' };
+    hideRecipeFetchStatus();
+    renderParsedRecipeEditor(parsedRecipeData);
+
+  } catch(err) {
+    hideRecipeFetchStatus();
+    showToast('Parse failed: ' + (err.message || 'Try again'));
+  }
+}
+
+// ── Render parsed recipe editor ────────────────────────────────────────────────
+
+function renderParsedRecipeEditor(recipe) {
+  document.getElementById('parsedRecipeEditor').style.display = 'block';
+  document.getElementById('parsedRecipeName').value = recipe.name || '';
+  document.getElementById('origServings').value = recipe.servings || 4;
+  document.getElementById('targetServings').value = recipe.servings || 4;
+  document.getElementById('parsedRecipeNotes').value = recipe.notes || '';
+  document.getElementById('parsedRecipeFullText').textContent = recipe.fullText || '';
+
+  renderParsedIngredients(recipe.ingredients, 1);
+  updateScalerNote();
+
+  // Scroll to editor
+  document.getElementById('recipeImportPanel').scrollTop = 300;
+}
+
+function renderParsedIngredients(ingredients, scale) {
+  const list = document.getElementById('parsedIngredientList');
+  list.innerHTML = (ingredients || []).map((ing, i) => `
+    <div class="parsed-ingredient-row">
+      <input type="checkbox" checked data-idx="${i}" id="ring-${i}">
+      <label for="ring-${i}" class="parsed-ing-name" style="cursor:pointer;flex:1;">${escHtml(scaleQuantity(ing.quantity, scale))} ${escHtml(ing.name)}</label>
+      <button class="sub-hint-btn" data-ing="${escHtml(ing.name)}" data-qty="${escHtml(scaleQuantity(ing.quantity,scale))}" data-recipe="${escHtml(parsedRecipeData?.name||'')}" title="Substitution advisor" style="background:var(--sage-light);border:none;border-radius:6px;padding:3px 7px;cursor:pointer;font-size:11px;color:var(--sage-dark);font-weight:500;white-space:nowrap;flex-shrink:0;">⇄ Sub</button>
+    </div>
+  `).join('');
+
+  // Wire sub buttons
+  list.querySelectorAll('.sub-hint-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openSubModal(btn.dataset.ing, btn.dataset.qty, btn.dataset.recipe);
+    });
+  });
+}
+
+// ── Serving scaler ────────────────────────────────────────────────────────────
+
+function scaleQuantity(qty, scale) {
+  if (!qty || scale === 1) return qty || '';
+  // Replace numbers (including fractions) with scaled versions
+  return qty.replace(/(\d+\/\d+|\d+\.?\d*)/g, (match) => {
+    let num;
+    if (match.includes('/')) {
+      const [n, d] = match.split('/');
+      num = parseFloat(n) / parseFloat(d);
+    } else {
+      num = parseFloat(match);
+    }
+    const scaled = num * scale;
+    // Convert back to nice fraction if close
+    const fracs = [[1,4],[1,3],[1,2],[2,3],[3,4]];
+    for (const [n,d] of fracs) {
+      if (Math.abs(scaled - n/d) < 0.05) return `${n}/${d}`;
+    }
+    return scaled % 1 === 0 ? scaled.toString() : scaled.toFixed(1).replace(/\.0$/,'');
+  });
+}
+
+function updateScalerNote() {
+  const orig = parseFloat(document.getElementById('origServings').value) || 4;
+  const target = parseFloat(document.getElementById('targetServings').value) || 4;
+  const scale = target / orig;
+  const note = document.getElementById('scalerNote');
+  if (scale !== 1 && parsedRecipeData) {
+    note.style.display = 'block';
+    note.textContent = `Scaling ${scale > 1 ? 'up' : 'down'} by ${scale.toFixed(2)}× — quantities updated below.`;
+    renderParsedIngredients(parsedRecipeData.ingredients, scale);
+  } else {
+    note.style.display = 'none';
+    if (parsedRecipeData) renderParsedIngredients(parsedRecipeData.ingredients, 1);
+  }
+}
+
+document.getElementById('origServings').addEventListener('input', updateScalerNote);
+document.getElementById('targetServings').addEventListener('input', updateScalerNote);
+
+// Toggle all ingredients
+let allSelected = true;
+document.getElementById('toggleAllIngredients').addEventListener('click', () => {
+  allSelected = !allSelected;
+  document.getElementById('parsedIngredientList').querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = allSelected);
+  document.getElementById('toggleAllIngredients').textContent = allSelected ? 'Deselect all' : 'Select all';
+});
+
+// ── Add to list ───────────────────────────────────────────────────────────────
+
+document.getElementById('addToListBtn').addEventListener('click', () => {
+  addParsedRecipeToList(true);
+});
+document.getElementById('saveToLibraryBtn').addEventListener('click', () => {
+  addParsedRecipeToList(false);
+});
+
+function addParsedRecipeToList(addToList) {
+  if (!parsedRecipeData) return;
+
+  const name      = document.getElementById('parsedRecipeName').value.trim() || parsedRecipeData.name || 'Unnamed Recipe';
+  const origServ  = parseFloat(document.getElementById('origServings').value) || 4;
+  const targetServ = parseFloat(document.getElementById('targetServings').value) || 4;
+  const scale     = targetServ / origServ;
+  const notes     = document.getElementById('parsedRecipeNotes').value.trim();
+  const fullText  = parsedRecipeData.fullText || '';
+  const sourceUrl = parsedRecipeData.sourceUrl || '';
+
+  // Save to library
+  const recipes = loadRecipes();
+  const existing = recipes.findIndex(r => r.name === name);
+  const recipeEntry = {
+    id: existing >= 0 ? recipes[existing].id : Date.now(),
+    name, origServings: origServ, targetServings: targetServ,
+    ingredients: parsedRecipeData.ingredients,
+    fullText, sourceUrl, notes,
+    savedAt: Date.now()
+  };
+  if (existing >= 0) recipes[existing] = recipeEntry;
+  else recipes.unshift(recipeEntry);
+  saveRecipes(recipes);
+
+  // Add checked ingredients to shopping list
+  if (addToList) {
+    const checks = document.getElementById('parsedIngredientList').querySelectorAll('input[type=checkbox]');
+    let added = 0;
+    checks.forEach(cb => {
+      if (cb.checked) {
+        const ing = parsedRecipeData.ingredients[parseInt(cb.dataset.idx)];
+        addItem(ing.name, {
+          quantity: scaleQuantity(ing.quantity, scale),
+          category: ing.category,
+          recipes: [name]
+        });
+        added++;
+      }
+    });
+    showToast(`Added ${added} ingredients for "${name}" ✓`);
+    setTimeout(() => showView('list'), 800);
+  } else {
+    showToast(`"${name}" saved to library`);
+    showView('recipes');
+  }
+
+  // Reset import panel
+  parsedRecipeData = null;
+  document.getElementById('parsedRecipeEditor').style.display = 'none';
+  document.getElementById('recipeUrlInput').value = '';
+  document.getElementById('recipeTextInput').value = '';
+}
+
+// ── Recipe library render ─────────────────────────────────────────────────────
+
+function renderRecipeLibrary() {
+  const recipes = loadRecipes();
+  const container = document.getElementById('recipeLibraryList');
+
+  if (!recipes.length) {
+    container.innerHTML = `<div class="empty-state" style="padding-top:40px;">
+      <div class="empty-icon">📖</div>
+      <p>No saved recipes yet</p>
+      <p class="empty-hint">Import your first recipe using the<br>button above.</p>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = recipes.map(r => `
+    <div class="recipe-library-card" data-rid="${r.id}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <p class="recipe-card-name">${escHtml(r.name)}</p>
+          <p class="recipe-card-meta">${r.ingredients?.length || 0} ingredients · ${r.targetServings || r.origServings || '?'} servings · saved ${timeAgo(r.savedAt)}</p>
+          ${r.notes ? `<p class="recipe-card-notes">${escHtml(r.notes.slice(0, 80))}${r.notes.length > 80 ? '…' : ''}</p>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="recipe-card-btn recipe-add-btn" data-rid="${r.id}" title="Add to list">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button class="recipe-card-btn recipe-delete-btn" data-rid="${r.id}" title="Delete">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          </button>
+        </div>
+      </div>
+      ${r.sourceUrl ? `<p style="font-size:11px;color:var(--ink-ghost);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.sourceUrl}</p>` : ''}
+    </div>
+  `).join('');
+
+  // Add to list buttons
+  container.querySelectorAll('.recipe-add-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const rid = parseInt(btn.dataset.rid);
+      const recipe = loadRecipes().find(r => r.id === rid);
+      if (!recipe) return;
+      recipe.ingredients.forEach(ing => {
+        addItem(ing.name, { quantity: ing.quantity, category: ing.category, recipes: [recipe.name] });
+      });
+      showToast(`Added ${recipe.ingredients.length} ingredients for "${recipe.name}" ✓`);
+      showView('list');
+    });
+  });
+
+  // Delete buttons
+  container.querySelectorAll('.recipe-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const rid = parseInt(btn.dataset.rid);
+      if (!confirm('Delete this recipe from your library?')) return;
+      const recipes = loadRecipes().filter(r => r.id !== rid);
+      saveRecipes(recipes);
+      renderRecipeLibrary();
+      showToast('Recipe deleted');
+    });
+  });
+}
+
+function timeAgo(ts) {
+  if (!ts) return '';
+  const diff = Date.now() - ts;
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days}d ago`;
+  return `${Math.floor(days/30)}mo ago`;
+}
+
+// ── Status helpers ────────────────────────────────────────────────────────────
+
+function showRecipeFetchStatus(msg) {
+  document.getElementById('recipeFetchStatus').style.display = 'block';
+  document.getElementById('recipeFetchStatusText').textContent = msg;
+  document.getElementById('parsedRecipeEditor').style.display = 'none';
+}
+function hideRecipeFetchStatus() {
+  document.getElementById('recipeFetchStatus').style.display = 'none';
+}
+
+// ── Substitution Advisor ──────────────────────────────────────────────────────
+
+let subContext = { ingredient: '', quantity: '', recipe: '' };
+let subChatHistory = []; // full conversation for follow-ups
+
+function openSubModal(ingredient, quantity, recipe) {
+  subContext = { ingredient, quantity, recipe };
+  subChatHistory = [];
+
+  document.getElementById('subModalTitle').textContent = ingredient;
+  document.getElementById('subModalSub').textContent = [quantity, recipe ? `for ${recipe}` : ''].filter(Boolean).join(' · ');
+  document.getElementById('subUserIdea').value = '';
+  document.getElementById('subResults').style.display = 'none';
+  document.getElementById('subResults').innerHTML = '';
+  document.getElementById('subStatus').style.display = 'none';
+  document.getElementById('subChat').style.display = 'none';
+  document.getElementById('subChatMessages').innerHTML = '';
+  document.getElementById('subChatInput').value = '';
+
+  document.getElementById('subModal').classList.add('open');
+  setTimeout(() => document.getElementById('subUserIdea').focus(), 350);
+}
+
+document.getElementById('subAnalyzeBtn').addEventListener('click', runSubAnalysis);
+document.getElementById('subUserIdea').addEventListener('keydown', e => { if (e.key === 'Enter') runSubAnalysis(); });
+
+async function runSubAnalysis() {
+  const apiKey = getApiKey();
+  if (!apiKey) { showToast('Add your API key in Settings first'); return; }
+
+  const idea = document.getElementById('subUserIdea').value.trim();
+  const { ingredient, quantity, recipe } = subContext;
+
+  document.getElementById('subStatus').style.display = 'block';
+  document.getElementById('subResults').style.display = 'none';
+  document.getElementById('subChat').style.display = 'none';
+
+  const ingredientLine = (quantity ? quantity + ' ' : '') + ingredient + (recipe ? ' in ' + recipe : '');
+
+  let userMsg = 'I am working with: ' + ingredientLine + '.\n\n';
+
+  if (idea) {
+    userMsg += 'My substitution idea: ' + idea + '\n\n'
+      + 'Please do two things:\n'
+      + '1. Analyze my substitution idea specifically — what happens to texture, flavor, structure, and baking chemistry? Give it a clear verdict: does it work well, work partially, or cause problems?\n'
+      + '2. Give me your top 2-3 own recommendations for healthier substitutions focused on reducing fat and sugar and increasing fiber, with conversion ratios and honest tradeoffs.\n\n'
+      + 'End with one key tip about this ingredient in this recipe context.';
+  } else {
+    userMsg += 'Give me your top 3 substitution recommendations for this ingredient focused on reducing fat, reducing sugar, and increasing fiber while keeping the result as delicious as possible. '
+      + 'For each one include: what to substitute, the conversion ratio, the health benefit, and an honest assessment of the texture or flavor impact. '
+      + 'End with one key tip about working with this ingredient.';
+  }
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        system: 'You are an expert culinary nutritionist and pastry chef advising a home cook who loves to bake. She wants to reduce fat, sugar, and increase fiber in recipes while maintaining great results. Be specific, practical, and honest about tradeoffs. Write in clear plain prose — no markdown symbols, no asterisks, no bullet dashes. Use numbered lists where helpful.',
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+
+    const data = await resp.json();
+
+    // DEBUG: show exactly what came back
+    console.log('API response:', JSON.stringify(data, null, 2));
+
+    // Show raw API error clearly if present
+    if (data.error) {
+      throw new Error('API error ' + data.error.type + ': ' + (data.error.message || JSON.stringify(data.error)));
+    }
+
+    if (!data.content || !data.content.length) {
+      throw new Error('Empty response. Raw: ' + JSON.stringify(data));
+    }
+
+    const reply = data.content.map(b => b.type === 'text' ? b.text : '').join('').trim();
+
+    subChatHistory = [
+      { role: 'user', content: userMsg },
+      { role: 'assistant', content: reply }
+    ];
+
+    document.getElementById('subStatus').style.display = 'none';
+    renderSubResults(reply, idea);
+
+  } catch(err) {
+    document.getElementById('subStatus').style.display = 'none';
+    document.getElementById('subResults').innerHTML =
+      '<div style="color:var(--terracotta);font-size:13px;padding:12px 0;line-height:1.6;word-break:break-all;">'
+      + '<strong>Error detail:</strong><br>'
+      + escHtml(err.message || 'Unknown error') + '</div>';
+    document.getElementById('subResults').style.display = 'block';
+  }
+}
+
+function renderSubResults(reply, userIdea) {
+  // reply is now plain text from Claude
+  // Split into paragraphs/sections for display
+  const paragraphs = reply.split(/\n\n+/).filter(p => p.trim());
+
+  let html = '';
+
+  // If user had an idea, highlight the first paragraph as the verdict section
+  if (userIdea && paragraphs.length) {
+    const firstPara = paragraphs[0];
+    const isPositive = /work(s)? well|great|excellent|good choice|recommended/i.test(firstPara);
+    const isNegative = /problem|issue|not recommend|avoid|difficult|won't work|will not/i.test(firstPara);
+    const bg   = isNegative ? 'var(--urgent-bg)'  : isPositive ? 'var(--sage-light)' : 'var(--gold-light)';
+    const text = isNegative ? 'var(--terracotta)' : isPositive ? 'var(--sage-dark)'  : 'var(--gold-dark)';
+    const icon = isNegative ? '!' : isPositive ? '✓' : '~';
+
+    html += '<div style="background:' + bg + ';border-radius:12px;padding:14px;margin-bottom:12px;">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+      + '<span style="width:22px;height:22px;border-radius:50%;background:' + text + ';color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">' + icon + '</span>'
+      + '<p style="font-size:13px;font-weight:600;color:' + text + ';">Your idea: ' + escHtml(userIdea) + '</p>'
+      + '</div>'
+      + '<p style="font-size:13px;color:var(--ink);line-height:1.65;">' + escHtml(firstPara) + '</p>'
+      + '</div>';
+
+    // Remaining paragraphs
+    paragraphs.slice(1).forEach(p => {
+      html += '<div style="background:var(--warm-white);border:0.5px solid var(--parchment);border-radius:10px;padding:12px;margin-bottom:8px;">'
+        + '<p style="font-size:13px;color:var(--ink);line-height:1.65;">' + escHtml(p) + '</p>'
+        + '</div>';
+    });
+
+  } else {
+    // No user idea — render all paragraphs as recommendation cards
+    paragraphs.forEach((p, i) => {
+      const isLast = i === paragraphs.length - 1;
+      if (isLast && paragraphs.length > 1) {
+        // Last paragraph as tip
+        html += '<div style="border-left:3px solid var(--gold);padding:8px 12px;margin-top:4px;background:var(--gold-light);border-radius:0 8px 8px 0;">'
+          + '<p style="font-size:13px;color:var(--ink);line-height:1.6;font-style:italic;">' + escHtml(p) + '</p>'
+          + '</div>';
+      } else {
+        html += '<div style="background:var(--warm-white);border:0.5px solid var(--parchment);border-radius:10px;padding:12px;margin-bottom:8px;">'
+          + '<p style="font-size:13px;color:var(--ink);line-height:1.65;">' + escHtml(p) + '</p>'
+          + '</div>';
+      }
+    });
+  }
+
+  document.getElementById('subResults').innerHTML = html;
+  document.getElementById('subResults').style.display = 'block';
+  document.getElementById('subChat').style.display = 'block';
+  document.getElementById('subSheet').scrollTop = 0;
+}
+
+  let html = '';
+
+  // My idea analysis
+// ── Follow-up chat ────────────────────────────────────────────────────────────
+
+document.getElementById('subChatSendBtn').addEventListener('click', sendSubChat);
+document.getElementById('subChatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendSubChat(); });
+
+async function sendSubChat() {
+  const apiKey = getApiKey();
+  if (!apiKey) { showToast('Add your API key in Settings first'); return; }
+  const input = document.getElementById('subChatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  appendSubChatMessage('user', msg);
+
+  const thinkingEl = appendSubChatMessage('assistant', '…');
+  subChatHistory.push({ role: 'user', content: msg });
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 800,
+        system: `You are an expert culinary nutritionist and pastry chef. The user is asking follow-up questions about substituting ${subContext.ingredient}${subContext.recipe ? ` in ${subContext.recipe}` : ''}. Be concise, practical, and specific. Plain text only — no markdown, no bullet symbols, use natural prose.`,
+        messages: subChatHistory
+      })
+    });
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    const reply = data.content.map(b => b.text||'').join('').trim();
+    subChatHistory.push({ role: 'assistant', content: reply });
+    thinkingEl.textContent = reply;
+
+  } catch(err) {
+    thinkingEl.textContent = 'Error: ' + (err.message || 'Try again');
+    thinkingEl.style.color = 'var(--terracotta)';
+  }
+
+  // Scroll chat to bottom
+  const chatEl = document.getElementById('subChatMessages');
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function appendSubChatMessage(role, text) {
+  const chatEl = document.getElementById('subChatMessages');
+  const isUser = role === 'user';
+  const el = document.createElement('div');
+  el.style.cssText = `max-width:88%;align-self:${isUser?'flex-end':'flex-start'};background:${isUser?'var(--sage-dark)':'var(--warm-white)'};color:${isUser?'white':'var(--ink)'};border-radius:${isUser?'12px 12px 4px 12px':'12px 12px 12px 4px'};padding:9px 12px;font-size:13px;line-height:1.55;border:${isUser?'none':'0.5px solid var(--parchment)'};`;
+  el.textContent = text;
+  chatEl.appendChild(el);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return el;
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
