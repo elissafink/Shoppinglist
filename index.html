@@ -2692,36 +2692,67 @@ async function fetchRecipeUrl() {
   showRecipeFetchStatus('Fetching recipe…');
 
   try {
-    // Try to fetch the page via a CORS proxy
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    const proxyResp = await fetch(proxyUrl);
-    const proxyData = await proxyResp.json();
+    // Use Claude with web_search tool to fetch and parse the URL directly —
+    // avoids all CORS and proxy issues entirely
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{
+          role: 'user',
+          content: 'Please fetch this recipe URL and extract the full recipe from it: ' + url + '\n\n'
+            + 'Return ONLY a JSON object, no markdown:\n'
+            + '{"name":"recipe name","servings":4,"ingredients":[{"name":"ingredient","quantity":"amount + unit","category":"Produce|Dairy & Eggs|Meat & Seafood|Bakery & Bread|Pantry & Dry Goods|Canned & Jarred|Frozen|Beverages|Spices & Condiments|Household & Other"}],"fullText":"complete recipe instructions as plain text"}\n\n'
+            + 'If the page is paywalled or inaccessible, return: {"error":"paywall"}'
+        }]
+      })
+    });
 
-    let pageText = '';
-    if (proxyData.contents) {
-      // Strip HTML tags to get readable text
-      const tmp = document.createElement('div');
-      tmp.innerHTML = proxyData.contents;
-      // Remove scripts and styles
-      tmp.querySelectorAll('script,style,nav,footer,header,aside').forEach(el => el.remove());
-      pageText = tmp.innerText || tmp.textContent || '';
-      pageText = pageText.replace(/\s{3,}/g, '\n\n').trim().slice(0, 6000);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+
+    // Extract text from response (may include tool_use blocks — just get text blocks)
+    const raw = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text).join('')
+      .replace(/```json|```/g, '').trim();
+
+    if (!raw) throw new Error('No response from API');
+
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+    } catch(e) {
+      throw new Error('Could not parse recipe — try pasting the text below instead');
     }
 
-    if (!pageText || pageText.length < 100) {
+    if (parsed.error === 'paywall') {
       throw new Error('paywall');
     }
 
-    showRecipeFetchStatus('Parsing ingredients…');
-    await parseRecipeText(pageText, url);
+    if (!parsed.ingredients?.length) {
+      throw new Error('No ingredients found — try pasting the recipe text below');
+    }
+
+    parsedRecipeData = { ...parsed, sourceUrl: url, notes: '' };
+    hideRecipeFetchStatus();
+    renderParsedRecipeEditor(parsedRecipeData);
 
   } catch(err) {
     hideRecipeFetchStatus();
-    if (err.message === 'paywall' || err.message?.includes('fetch')) {
-      // Show paywall notice and suggest paste
-      document.getElementById('recipeTextInput').placeholder = `This site may require a login. Copy the recipe text from ${url} and paste it here.`;
+    if (err.message === 'paywall') {
+      document.getElementById('recipeTextInput').placeholder = 'This site requires a login. Copy the recipe text and paste it here.';
       document.getElementById('recipeTextInput').focus();
-      showToast('Could not fetch — paste the recipe text below ↓');
+      showToast('Paywalled — paste the recipe text below ↓');
     } else {
       showToast('Fetch failed: ' + (err.message || 'Unknown error'));
     }
