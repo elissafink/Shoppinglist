@@ -1038,6 +1038,11 @@ html, body {
           style="flex:1;height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;">
         <button id="recipeFetchBtn" style="height:44px;padding:0 16px;border-radius:10px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;">Fetch</button>
       </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:5px;">
+        <button id="diagToggleBtn" style="background:none;border:none;font-size:12px;color:var(--ink-ghost);cursor:pointer;padding:0;text-decoration:underline;">What did Claude see? (debug)</button>
+      </div>
+      <!-- Diagnostic output — hidden by default -->
+      <div id="diagOutput" style="display:none;margin-top:8px;background:var(--parchment);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--ink-muted);font-family:monospace;white-space:pre-wrap;max-height:160px;overflow-y:auto;line-height:1.5;"></div>
     </div>
 
     <!-- Paywall helper — shown when URL fetch fails -->
@@ -1045,30 +1050,51 @@ html, body {
       <div style="background:var(--gold-light);padding:12px 16px;display:flex;align-items:center;gap:10px;">
         <span style="font-size:20px;">🔒</span>
         <div>
-          <p style="font-size:14px;font-weight:600;color:var(--gold-dark);margin-bottom:1px;">This page requires a login</p>
-          <p style="font-size:12px;color:var(--gold-dark);opacity:0.8;">Copy the recipe text and paste it below — takes about 30 seconds.</p>
+          <p style="font-size:14px;font-weight:600;color:var(--gold-dark);margin-bottom:1px;">Page blocked — likely the "Open in app" prompt</p>
+          <p style="font-size:12px;color:var(--gold-dark);opacity:0.85;">NYT redirects automated fetches to an app-install page. Use one of these workarounds:</p>
         </div>
       </div>
       <div style="padding:14px 16px;">
-        <p style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">How to copy from NYT Cooking:</p>
-        <div style="display:flex;flex-direction:column;gap:8px;">
+
+        <p style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Option 1 — Screenshot the ingredients (fastest)</p>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
           <div style="display:flex;gap:10px;align-items:flex-start;">
-            <span style="width:22px;height:22px;border-radius:50%;background:var(--terracotta);color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">1</span>
-            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Open the recipe in your browser and make sure you're logged in to NYT Cooking</p>
+            <span style="width:20px;height:20px;border-radius:50%;background:var(--terracotta);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">1</span>
+            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Open the recipe in the NYT Cooking app, screenshot the ingredients list (1–3 screenshots)</p>
           </div>
           <div style="display:flex;gap:10px;align-items:flex-start;">
-            <span style="width:22px;height:22px;border-radius:50%;background:var(--terracotta);color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">2</span>
-            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Scroll to the ingredients section — tap and hold any ingredient to start selecting, then drag to select all ingredients and instructions</p>
+            <span style="width:20px;height:20px;border-radius:50%;background:var(--terracotta);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">2</span>
+            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Go back to the main list → tap the 📷 camera icon → select your screenshots</p>
           </div>
           <div style="display:flex;gap:10px;align-items:flex-start;">
-            <span style="width:22px;height:22px;border-radius:50%;background:var(--terracotta);color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">3</span>
-            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Tap <strong style="color:var(--ink);">Copy</strong> — then come back here and paste below</p>
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-start;">
-            <span style="width:22px;height:22px;border-radius:50%;background:var(--sage);color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">✓</span>
-            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Even just the ingredients list works — you don't need the full recipe</p>
+            <span style="width:20px;height:20px;border-radius:50%;background:var(--terracotta);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">3</span>
+            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Type the recipe name in the field that appears — it gets tagged on every ingredient</p>
           </div>
         </div>
+
+        <div style="height:0.5px;background:var(--parchment);margin-bottom:14px;"></div>
+
+        <p style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Option 2 — Copy &amp; paste the recipe text</p>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="width:20px;height:20px;border-radius:50%;background:var(--ink-ghost);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">1</span>
+            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">In the NYT Cooking app, tap the recipe title — then tap <strong style="color:var(--ink);">Share</strong> → <strong style="color:var(--ink);">Copy Link</strong></p>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="width:20px;height:20px;border-radius:50%;background:var(--ink-ghost);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">2</span>
+            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Open that link in <strong style="color:var(--ink);">Safari</strong> (not Chrome) while logged in — tap &amp; hold the ingredient text to select it all, then Copy</p>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="width:20px;height:20px;border-radius:50%;background:var(--ink-ghost);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">3</span>
+            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Paste in the box below</p>
+          </div>
+        </div>
+
+        <div style="height:0.5px;background:var(--parchment);margin-bottom:14px;"></div>
+
+        <p style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Option 3 — Try the gift link directly</p>
+        <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">If your URL has <code style="font-size:11px;background:var(--parchment);padding:1px 5px;border-radius:4px;">unlocked_article_code</code> in it, paste it below. Claude will try to read it as plain text without triggering the app redirect.</p>
+
       </div>
     </div>
 
@@ -2912,10 +2938,10 @@ async function fetchRecipeUrl() {
   if (!apiKey) { showToast('Add your API key in Settings first'); setTimeout(() => showView('settings'), 1200); return; }
 
   showRecipeFetchStatus('Fetching recipe…');
+  document.getElementById('diagOutput').style.display = 'none';
+  document.getElementById('diagOutput').textContent = '';
 
   try {
-    // Use Claude with web_search tool to fetch and parse the URL directly —
-    // avoids all CORS and proxy issues entirely
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -2926,14 +2952,18 @@ async function fetchRecipeUrl() {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
+        max_tokens: 3000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{
           role: 'user',
-          content: 'Please fetch this recipe URL and extract the full recipe from it: ' + url + '\n\n'
-            + 'Return ONLY a JSON object, no markdown:\n'
-            + '{"name":"recipe name","servings":4,"ingredients":[{"name":"ingredient","quantity":"amount + unit","category":"Produce|Dairy & Eggs|Meat & Seafood|Bakery & Bread|Pantry & Dry Goods|Canned & Jarred|Frozen|Beverages|Spices & Condiments|Household & Other"}],"fullText":"complete recipe instructions as plain text"}\n\n'
-            + 'If the page is paywalled or inaccessible, return: {"error":"paywall"}'
+          content: 'Please fetch this URL and extract the recipe from it: ' + url + '\n\n'
+            + 'IMPORTANT notes:\n'
+            + '- If the page shows an "Open in app", "Stay in browser", "Use the app", or any app-redirect interstitial, describe exactly what you see in the diagnostic field.\n'
+            + '- If the URL contains an unlocked_article_code or gift parameter, honor it — try to read the actual page content.\n'
+            + '- If you see a real recipe, extract it fully including all ingredients with quantities and all instructions.\n\n'
+            + 'Return a JSON object (no markdown):\n'
+            + '{"name":"recipe name","servings":4,"ingredients":[{"name":"ingredient","quantity":"amount + unit","category":"Produce|Dairy & Eggs|Meat & Seafood|Bakery & Bread|Pantry & Dry Goods|Canned & Jarred|Frozen|Beverages|Spices & Condiments|Household & Other"}],"fullText":"complete instructions as plain text","diagnostic":"brief note on what you saw — recipe found / app redirect / login wall / etc."}\n\n'
+            + 'If no recipe found: {"error":"blocked","diagnostic":"exact description of what you saw instead of a recipe"}'
         }]
       })
     });
@@ -2941,7 +2971,6 @@ async function fetchRecipeUrl() {
     const data = await resp.json();
     if (data.error) throw new Error(data.error.message);
 
-    // Extract text from response (may include tool_use blocks — just get text blocks)
     const raw = (data.content || [])
       .filter(b => b.type === 'text')
       .map(b => b.text).join('')
@@ -2949,20 +2978,19 @@ async function fetchRecipeUrl() {
 
     if (!raw) throw new Error('No response from API');
 
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    // Always store raw for diagnostic
+    document.getElementById('diagOutput').textContent = raw;
+
     let parsed;
     try {
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
       parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
     } catch(e) {
-      throw new Error('Could not parse recipe — try pasting the text below instead');
-    }
-
-    if (parsed.error === 'paywall') {
       throw new Error('paywall');
     }
 
-    if (!parsed.ingredients?.length) {
-      throw new Error('No ingredients found — try pasting the recipe text below');
+    if (parsed.error === 'blocked' || parsed.error === 'paywall' || !parsed.ingredients?.length) {
+      throw new Error('paywall');
     }
 
     parsedRecipeData = { ...parsed, sourceUrl: url, notes: '' };
@@ -2972,19 +3000,28 @@ async function fetchRecipeUrl() {
   } catch(err) {
     hideRecipeFetchStatus();
     if (err.message === 'paywall' || err.message?.includes('paywall') || err.message?.includes('Could not')) {
-      // Show the step-by-step paywall helper and scroll to paste area
       document.getElementById('paywallHelper').style.display = 'block';
       document.getElementById('recipeTextInput').style.borderColor = 'var(--terracotta)';
       document.getElementById('recipeTextInput').placeholder = 'Paste the recipe text here — just the ingredients list is enough.';
       setTimeout(() => {
         document.getElementById('paywallHelper').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        document.getElementById('recipeTextInput').focus();
       }, 100);
     } else {
       showToast('Fetch failed: ' + (err.message || 'Unknown error'));
     }
   }
 }
+
+// Diagnostic toggle
+document.getElementById('diagToggleBtn').addEventListener('click', () => {
+  const el = document.getElementById('diagOutput');
+  if (el.style.display === 'none') {
+    el.textContent = el.textContent || 'Fetch a URL first to see what Claude saw.';
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+});
 
 // ── Text paste parse ───────────────────────────────────────────────────────────
 
