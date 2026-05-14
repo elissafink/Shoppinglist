@@ -1580,19 +1580,19 @@ html, body {
       <h2 class="modal-title" id="brandOptTitle" style="margin-bottom:0;flex:1;">Find best option</h2>
       <button onclick="document.getElementById('brandOptModal').classList.remove('open')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--parchment);color:var(--ink-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-label="Close">✕</button>
     </div>
-    <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px;line-height:1.5;">Enter up to 5 brand names separated by commas. Claude will search expert cooking sites and rank them by quality.</p>
+    <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px;line-height:1.5;">Enter up to 5 brand names to compare — or leave blank and Claude will find the best-reviewed brands for you.</p>
 
     <!-- Brand name input -->
     <div style="margin-bottom:12px;">
-      <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Brand names</label>
-      <textarea id="brandOptInput" rows="3" placeholder="e.g. Kerrygold, Plugrá, Land O'Lakes, Vermont Creamery, Organic Valley"
+      <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Brand names <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
+      <textarea id="brandOptInput" rows="3" placeholder="Leave blank to find the top-rated brands… or type specific ones: Kerrygold, Plugrá, Land O'Lakes"
         style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;resize:none;line-height:1.5;"></textarea>
       <p id="brandOptCount" style="font-size:12px;color:var(--ink-ghost);margin-top:4px;text-align:right;">0 / 5 brands</p>
     </div>
 
     <!-- Analyze button -->
     <button id="brandOptAnalyzeBtn" style="width:100%;height:48px;border-radius:12px;border:none;background:var(--gold-dark);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:0;">
-      Search &amp; rank these brands
+      Find best brands
     </button>
 
     <!-- Status -->
@@ -2843,12 +2843,13 @@ brandOptModal.addEventListener('click', e => {
   if (e.target === brandOptModal) brandOptModal.classList.remove('open');
 });
 
-// Live brand count
+// Live brand count + dynamic button label
 brandOptInput.addEventListener('input', () => {
   const brands = parseBrands(brandOptInput.value);
   const count = Math.min(brands.length, 5);
-  brandOptCount.textContent = `${count} / 5 brands`;
+  brandOptCount.textContent = count ? count + ' / 5 brands' : '0 / 5 — or leave blank to auto-find top brands';
   brandOptCount.style.color = count > 5 ? 'var(--terracotta)' : 'var(--ink-ghost)';
+  brandOptAnalyzeBtn.textContent = count ? 'Compare these brands' : 'Find best brands';
 });
 
 function parseBrands(text) {
@@ -2864,7 +2865,7 @@ brandOptAnalyzeBtn.addEventListener('click', async () => {
   }
 
   const brands = parseBrands(brandOptInput.value);
-  if (!brands.length) { showToast('Enter at least one brand name'); return; }
+  const isAutoSearch = brands.length === 0;
 
   const item = state.items.find(i => i.id === brandOptItemId);
   const ingredientName = item ? item.name : 'this ingredient';
@@ -2872,11 +2873,15 @@ brandOptAnalyzeBtn.addEventListener('click', async () => {
   brandOptAnalyzeBtn.style.display = 'none';
   brandOptResults.style.display = 'none';
   brandOptStatus.style.display = 'block';
-  brandOptStatusText.textContent = 'Searching reviews…';
+  brandOptStatusText.textContent = isAutoSearch
+    ? 'Finding the best-reviewed ' + ingredientName + ' brands…'
+    : 'Searching reviews…';
 
   try {
-    // Lean prompt — single search, plain text response, tight token budget
-    const brandList = brands.join(', ');
+    const prompt = isAutoSearch
+      ? 'Search for the top 4-5 best-reviewed and most recommended brands of ' + ingredientName + ' according to expert cooking sources. Rank them best to worst with 1-2 sentences each explaining why. End with your top pick.'
+      : 'Compare these ' + ingredientName + ' brands for overall quality: ' + brands.join(', ') + '. Search for reviews, then rank them best to worst with 1-2 sentences each explaining why. End with your top pick.';
+
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -2887,21 +2892,17 @@ brandOptAnalyzeBtn.addEventListener('click', async () => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 800,
+        max_tokens: 900,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: [{ type: 'text', text: 'You are a concise cooking expert. Give direct, practical brand recommendations. Plain prose only — no markdown, no asterisks.' }],
-        messages: [{
-          role: 'user',
-          content: 'Compare these ' + ingredientName + ' brands for overall quality: ' + brandList + '. Search for reviews, then rank them best to worst with 1-2 sentences each explaining why. End with your top pick.'
-        }]
+        messages: [{ role: 'user', content: prompt }]
       })
     });
 
     const data = await resp.json();
     if (data.error) {
-      // Detect rate limit specifically and give helpful message
       if (data.error.message?.includes('rate limit') || data.error.message?.includes('tokens per minute')) {
-        throw new Error('Rate limit hit — wait 30 seconds and try again. This resolves automatically as your account grows.');
+        throw new Error('Rate limit hit — wait 30 seconds and try again.');
       }
       throw new Error(data.error.message);
     }
@@ -2988,9 +2989,10 @@ async function fetchRecipeUrl() {
   if (!url) { showToast('Enter a recipe URL'); return; }
 
   const apiKey = getApiKey();
-  if (!apiKey) { showToast('Add your API key in Settings first'); setTimeout(() => showView('settings'), 1200); return; }
-
-  showRecipeFetchStatus('Fetching recipe…');
+  if (!apiKey) {
+    showRecipeFetchNotice('An API key is needed to fetch recipes. <button onclick="showView(\'settings\')" style="background:none;border:none;color:var(--terracotta);font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;cursor:pointer;padding:0;text-decoration:underline;">Add one in Settings →</button>');
+    return;
+  }
   document.getElementById('diagOutput').style.display = 'none';
   document.getElementById('diagOutput').textContent = '';
 
@@ -3118,7 +3120,10 @@ document.getElementById('recipeParseTextBtn').addEventListener('click', async ()
   const text = document.getElementById('recipeTextInput').value.trim();
   if (!text) { showToast('Paste some recipe text first'); return; }
   const apiKey = getApiKey();
-  if (!apiKey) { showToast('Add your API key in Settings first'); setTimeout(() => showView('settings'), 1200); return; }
+  if (!apiKey) {
+    showRecipeFetchNotice('An API key is needed to parse recipes. <button onclick="showView(\'settings\')" style="background:none;border:none;color:var(--terracotta);font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;cursor:pointer;padding:0;text-decoration:underline;">Add one in Settings →</button>');
+    return;
+  }
   showRecipeFetchStatus('Parsing recipe…');
   await parseRecipeText(text, '');
 });
@@ -3126,7 +3131,12 @@ document.getElementById('recipeParseTextBtn').addEventListener('click', async ()
 // Auto-parse when user pastes into the textarea
 document.getElementById('recipeTextInput').addEventListener('paste', async () => {
   const apiKey = getApiKey();
-  if (!apiKey) return; // silently skip — they'll hit the button and see the error
+  if (!apiKey) {
+    setTimeout(() => {
+      showRecipeFetchNotice('Paste received! <button onclick="showView(\'settings\')" style="background:none;border:none;color:var(--terracotta);font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;cursor:pointer;padding:0;text-decoration:underline;">Add an API key in Settings</button> to parse it automatically.');
+    }, 200);
+    return;
+  }
   // Small delay to let paste complete
   setTimeout(async () => {
     const text = document.getElementById('recipeTextInput').value.trim();
@@ -3531,11 +3541,26 @@ function timeAgo(ts) {
 
 // ── Status helpers ────────────────────────────────────────────────────────────
 
-function showRecipeFetchStatus(msg) {
-  document.getElementById('recipeFetchStatus').style.display = 'block';
-  document.getElementById('recipeFetchStatusText').textContent = msg;
+function showRecipeFetchStatus(msg, showSpinner = true) {
+  const statusEl = document.getElementById('recipeFetchStatus');
+  const spinnerEl = statusEl.querySelector('div');
+  const textEl = document.getElementById('recipeFetchStatusText');
+  statusEl.style.display = 'block';
+  textEl.textContent = msg;
+  if (spinnerEl) spinnerEl.style.display = showSpinner ? 'block' : 'none';
   document.getElementById('parsedRecipeEditor').style.display = 'none';
 }
+
+function showRecipeFetchNotice(html) {
+  const statusEl = document.getElementById('recipeFetchStatus');
+  const spinnerEl = statusEl.querySelector('div');
+  const textEl = document.getElementById('recipeFetchStatusText');
+  statusEl.style.display = 'block';
+  textEl.innerHTML = html;
+  if (spinnerEl) spinnerEl.style.display = 'none';
+  document.getElementById('parsedRecipeEditor').style.display = 'none';
+}
+
 function hideRecipeFetchStatus() {
   document.getElementById('recipeFetchStatus').style.display = 'none';
 }
@@ -4125,11 +4150,6 @@ function renderSubLibrary() {
 
 // Settings view needs absolute positioning within .app
 document.querySelector('.app').style.position = 'relative';
-
-// Show alert dot if no API key
-if (!getApiKey()) {
-  document.getElementById('settingsAlert').style.display = 'block';
-}
 
 render();
 </script>
