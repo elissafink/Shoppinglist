@@ -2807,7 +2807,8 @@ function renderBestOptResults(reply) {
 
   bestOptResults.innerHTML = '<p style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-ghost);margin-bottom:12px;">Product comparison</p>'
     + cardsHtml
-    + '<p style="font-size:11px;color:var(--ink-ghost);margin-top:12px;text-align:center;">Based on label analysis &amp; expert reviews. Always taste for yourself!</p>';
+    + '<p style="font-size:11px;color:var(--ink-ghost);margin-top:12px;text-align:center;">Based on label analysis &amp; expert reviews. Always taste for yourself!</p>'
+    + '<div style="text-align:center;margin-top:14px;"><button onclick="resetBestOpt()" style="background:none;border:1px solid var(--parchment);border-radius:8px;padding:8px 20px;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--ink-muted);cursor:pointer;">🔄 Scan new photos</button></div>';
   bestOptResults.style.display = 'block';
   document.getElementById('bestOptSheet').scrollTop = 0;
 }
@@ -2944,7 +2945,8 @@ function renderBrandOptResults(reply) {
 
   brandOptResults.innerHTML = '<p style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-ghost);margin-bottom:12px;">Brand comparison</p>'
     + cardsHtml
-    + '<p style="font-size:11px;color:var(--ink-ghost);margin-top:12px;text-align:center;">Based on expert reviews. Always taste for yourself!</p>';
+    + '<p style="font-size:11px;color:var(--ink-ghost);margin-top:12px;text-align:center;">Based on expert reviews. Always taste for yourself!</p>'
+    + '<div style="text-align:center;margin-top:14px;"><button onclick="resetBrandOpt()" style="background:none;border:1px solid var(--parchment);border-radius:8px;padding:8px 20px;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--ink-muted);cursor:pointer;">🔄 Search again</button></div>';
   brandOptResults.style.display = 'block';
   document.getElementById('brandOptSheet').scrollTop = 0;
 }
@@ -4144,6 +4146,30 @@ function renderSubLibrary() {
       showToast('Deleted');
     });
   });
+}
+
+// ── Reset helpers for comparison flows ───────────────────────────────────────
+
+function resetBrandOpt() {
+  brandOptInput.value = '';
+  brandOptCount.textContent = '0 / 5 — or leave blank to auto-find top brands';
+  brandOptResults.style.display = 'none';
+  brandOptResults.innerHTML = '';
+  brandOptAnalyzeBtn.textContent = 'Find best brands';
+  brandOptAnalyzeBtn.style.display = 'block';
+  brandOptStatus.style.display = 'none';
+  setTimeout(() => brandOptInput.focus(), 100);
+}
+
+function resetBestOpt() {
+  bestOptPhotos = [];
+  bestOptPreviews.innerHTML = '';
+  bestOptResults.style.display = 'none';
+  bestOptResults.innerHTML = '';
+  bestOptStatus.style.display = 'none';
+  bestOptPickBtn.style.display = 'flex';
+  bestOptAnalyzeBtn.style.display = 'none';
+  document.getElementById('bestOptSheet').scrollTop = 0;
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
