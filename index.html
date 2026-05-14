@@ -1551,7 +1551,7 @@ html, body {
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       Add product photo
     </button>
-    <input type="file" id="bestOptFileInput" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="bestOptFileInput" accept="image/*" style="display:none">
 
     <!-- Status -->
     <div id="bestOptStatus" style="display:none;text-align:center;padding:24px 0;">
@@ -2677,20 +2677,34 @@ bestOptFileInput.addEventListener('change', () => {
 });
 
 function renderBestOptPreviews() {
-  bestOptPreviews.innerHTML = bestOptPhotos.map((f, i) => {
-    const url = URL.createObjectURL(f);
-    return `<div class="bestopt-thumb-wrap">
-      <img class="bestopt-thumb" src="${url}" alt="Product ${i+1}">
-      <button class="bestopt-thumb-remove" data-idx="${i}" aria-label="Remove">✕</button>
-    </div>`;
-  }).join('');
-  bestOptPreviews.querySelectorAll('.bestopt-thumb-remove').forEach(btn => {
+  bestOptPreviews.innerHTML = '';
+  bestOptPhotos.forEach((f, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'bestopt-thumb-wrap';
+
+    const img = document.createElement('img');
+    img.className = 'bestopt-thumb';
+    img.alt = 'Product ' + (i + 1);
+    // Use FileReader for reliable display of library photos including HEIC
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; };
+    reader.readAsDataURL(f);
+
+    const btn = document.createElement('button');
+    btn.className = 'bestopt-thumb-remove';
+    btn.setAttribute('aria-label', 'Remove');
+    btn.textContent = '✕';
+    btn.dataset.idx = i;
     btn.addEventListener('click', () => {
-      bestOptPhotos.splice(parseInt(btn.dataset.idx), 1);
+      bestOptPhotos.splice(i, 1);
       renderBestOptPreviews();
       bestOptPickBtn.style.display = bestOptPhotos.length < 5 ? 'flex' : 'none';
       bestOptAnalyzeBtn.style.display = bestOptPhotos.length >= 1 ? 'block' : 'none';
     });
+
+    wrap.appendChild(img);
+    wrap.appendChild(btn);
+    bestOptPreviews.appendChild(wrap);
   });
 }
 
@@ -2711,15 +2725,21 @@ bestOptAnalyzeBtn.addEventListener('click', async () => {
   bestOptStatus.style.display = 'block';
 
   try {
-    // Step 1: Vision pass — identify each product from photos
-    bestOptStatusText.textContent = `Reading ${bestOptPhotos.length} product label${bestOptPhotos.length > 1 ? 's' : ''}…`;
+    // Convert all photos to base64 data URLs first
+    bestOptStatusText.textContent = 'Reading product labels…';
 
     const imageBlocks = await Promise.all(bestOptPhotos.map(async (f) => {
       const b64 = await fileToBase64(f);
-      return { type: 'image', source: { type: 'base64', media_type: f.type || 'image/jpeg', data: b64 } };
+      // Normalise media type — HEIC not supported by API, treat as jpeg
+      const mt = f.type && f.type !== 'image/heic' && f.type !== 'image/heif'
+        ? f.type : 'image/jpeg';
+      return { type: 'image', source: { type: 'base64', media_type: mt, data: b64 } };
     }));
 
-    const visionResp = await fetch('https://api.anthropic.com/v1/messages', {
+    // Single pass: vision + rank in one lean call
+    bestOptStatusText.textContent = 'Identifying products and searching reviews…';
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2729,124 +2749,66 @@ bestOptAnalyzeBtn.addEventListener('click', async () => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        max_tokens: 900,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: [{ type: 'text', text: 'You are a concise cooking expert helping someone shop in a grocery store. Be direct and practical. Plain prose only.' }],
         messages: [{
           role: 'user',
           content: [
             ...imageBlocks,
-            { type: 'text', text: `These are photos of different ${ingredientName} products in a grocery store. For each product photo, identify: brand name, product name/variant, size/weight if visible, any notable claims on the label (organic, non-GMO, artisan, etc.), and key ingredients if visible. Return ONLY a JSON array, one object per photo, in order: [{"brand":"...","product":"...","size":"...","claims":["..."],"keyIngredients":"...","searchQuery":"brand + product name best review cooking"}]. If you cannot identify a product clearly, still include it with whatever you can read.` }
+            { type: 'text', text: 'I photographed ' + bestOptPhotos.length + ' different ' + ingredientName + ' products. Read the labels, search for reviews of these specific products, then rank them best to worst with 1-2 sentences each explaining why. End with a clear top pick recommendation.' }
           ]
         }]
       })
     });
 
-    const visionData = await visionResp.json();
-    if (visionData.error) throw new Error(visionData.error.message);
-    const visionText = visionData.content.map(b => b.text || '').join('').replace(/```json|```/g, '').trim();
-    const products = JSON.parse(visionText);
-
-    // Step 2: Research + rank pass — search reviews and rank
-    bestOptStatusText.innerHTML = `Searching expert reviews…<br><span style="font-size:12px;opacity:0.7">Serious Eats · Cook's Illustrated · NYT Cooking · Wirecutter</span>`;
-
-    const productList = products.map((p, i) => `Product ${i+1}: ${p.brand} ${p.product}${p.size ? ' (' + p.size + ')' : ''}${p.claims?.length ? ' — claims: ' + p.claims.join(', ') : ''}`).join('\n');
-
-    const rankResp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{
-          role: 'user',
-          content: `I'm shopping for ${ingredientName} and photographed these products:\n\n${productList}\n\nPlease search for expert reviews of these products from authoritative cooking sources like Serious Eats, Cook's Illustrated, NYT Cooking, Wirecutter, Epicurious, and Food52. Search for each product individually if needed.\n\nThen rank all ${products.length} products from best to worst for overall quality. Return ONLY a JSON array (no markdown), ranked #1 best first:\n[{"rank":1,"productIndex":0,"brand":"...","product":"...","verdict":"2-3 sentence overall verdict","bullets":["key point 1","key point 2","key point 3"],"sources":"sites consulted"}]\n\nBase rankings on: ingredient quality, expert reviews found, brand reputation in cooking community, and any label claims. Be specific and honest — if one is clearly superior, say so.`
-        }]
-      })
-    });
-
-    const rankData = await rankResp.json();
-    if (rankData.error) throw new Error(rankData.error.message);
-
-    // Extract text from potentially multi-block response (tool use + text)
-    const rankText = rankData.content
-      .filter(b => b.type === 'text')
-      .map(b => b.text).join('')
-      .replace(/```json|```/g, '').trim();
-
-    let ranked;
-    try {
-      // Find JSON array in the response
-      const jsonMatch = rankText.match(/\[[\s\S]*\]/);
-      ranked = JSON.parse(jsonMatch ? jsonMatch[0] : rankText);
-    } catch(e) {
-      throw new Error('Could not parse rankings. Please try again.');
+    const data = await resp.json();
+    if (data.error) {
+      if (data.error.message?.includes('rate limit') || data.error.message?.includes('tokens per minute')) {
+        throw new Error('Rate limit hit — wait 30 seconds and try again.');
+      }
+      throw new Error(data.error.message || JSON.stringify(data.error));
     }
 
-    renderBestOptResults(ranked, products);
+    const reply = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text).join('').trim();
+
+    if (!reply) throw new Error('No response — please try again.');
+
+    renderBestOptResults(reply);
 
   } catch(err) {
     bestOptStatus.style.display = 'none';
-    bestOptStatusText.textContent = '';
-    bestOptResults.innerHTML = `<div style="text-align:center;padding:20px;color:var(--terracotta);font-size:14px;">
-      ${err.message || 'Something went wrong. Please try again.'}
-    </div>`;
+    bestOptResults.innerHTML = '<div style="text-align:center;padding:20px;color:var(--terracotta);font-size:14px;line-height:1.6;">'
+      + escHtml(err.message || 'Something went wrong. Please try again.') + '</div>';
     bestOptResults.style.display = 'block';
     bestOptPickBtn.style.display = 'flex';
     if (bestOptPhotos.length) bestOptAnalyzeBtn.style.display = 'block';
   }
 });
 
-function renderBestOptResults(ranked, products) {
+function renderBestOptResults(reply) {
   bestOptStatus.style.display = 'none';
 
-  const rankLabels = ['1st', '2nd', '3rd', '4th', '5th'];
+  // reply is plain text — split into paragraphs and render as cards
+  const paragraphs = reply.split(/\n\n+/).filter(p => p.trim());
 
-  const cardsHtml = ranked.map((r, i) => {
-    const isWinner = i === 0;
-    const rankClass = `r${i + 1}`;
-    const photo = bestOptPhotos[r.productIndex];
-    const photoUrl = photo ? URL.createObjectURL(photo) : null;
-
-    const bulletsHtml = r.bullets?.length
-      ? `<ul class="bestopt-bullets">${r.bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul>`
-      : '';
-
-    const sourceHtml = r.sources
-      ? `<p class="bestopt-source">Sources: ${escHtml(r.sources)}</p>`
-      : '';
-
-    const photoHtml = photoUrl
-      ? `<img src="${photoUrl}" alt="${escHtml(r.brand)}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--parchment);flex-shrink:0;">`
-      : '';
-
-    return `<div class="bestopt-card ${isWinner ? 'winner' : ''}">
-      <div class="bestopt-card-header">
-        <div class="bestopt-rank ${rankClass}">${rankLabels[i] || (i+1)}</div>
-        ${photoHtml}
-        <div class="bestopt-product-name">${escHtml(r.brand)} ${escHtml(r.product)}</div>
-        ${isWinner ? '<span class="bestopt-winner-badge">⭐ Best pick</span>' : ''}
-      </div>
-      <div class="bestopt-card-body">
-        <p class="bestopt-verdict">${escHtml(r.verdict)}</p>
-        ${bulletsHtml}
-        ${sourceHtml}
-      </div>
-    </div>`;
+  const cardsHtml = paragraphs.map((p, i) => {
+    const isFirst = i === 0;
+    const isLast = i === paragraphs.length - 1 && paragraphs.length > 1;
+    if (isLast) {
+      return '<div style="border-left:3px solid var(--gold);padding:8px 12px;background:var(--gold-light);border-radius:0 8px 8px 0;margin-bottom:8px;">'
+        + '<p style="font-size:13px;color:var(--ink);line-height:1.65;">' + escHtml(p) + '</p></div>';
+    }
+    return '<div style="background:var(--warm-white);border:0.5px solid var(--parchment);border-radius:10px;padding:12px;margin-bottom:8px;' + (isFirst ? 'border-left:3px solid var(--gold-dark);' : '') + '">'
+      + '<p style="font-size:13px;color:var(--ink);line-height:1.65;">' + escHtml(p) + '</p></div>';
   }).join('');
 
-  bestOptResults.innerHTML = `
-    <p style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-ghost);margin-bottom:12px;">Ranked by quality</p>
-    ${cardsHtml}
-    <p style="font-size:11px;color:var(--ink-ghost);margin-top:12px;line-height:1.6;text-align:center;">Rankings based on expert reviews &amp; label analysis. Always verify with your own taste!</p>
-  `;
+  bestOptResults.innerHTML = '<p style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-ghost);margin-bottom:12px;">Product comparison</p>'
+    + cardsHtml
+    + '<p style="font-size:11px;color:var(--ink-ghost);margin-top:12px;text-align:center;">Based on label analysis &amp; expert reviews. Always taste for yourself!</p>';
   bestOptResults.style.display = 'block';
-
-  // Scroll sheet to show results
   document.getElementById('bestOptSheet').scrollTop = 0;
 }
 
@@ -2910,11 +2872,11 @@ brandOptAnalyzeBtn.addEventListener('click', async () => {
   brandOptAnalyzeBtn.style.display = 'none';
   brandOptResults.style.display = 'none';
   brandOptStatus.style.display = 'block';
-  brandOptStatusText.innerHTML = `Searching expert reviews for ${brands.length} brand${brands.length > 1 ? 's' : ''}…<br><span style="font-size:12px;opacity:0.7">Serious Eats · Cook's Illustrated · NYT Cooking · Wirecutter</span>`;
+  brandOptStatusText.textContent = 'Searching reviews…';
 
   try {
-    const brandList = brands.map((b, i) => `Brand ${i + 1}: ${b}`).join('\n');
-
+    // Lean prompt — single search, plain text response, tight token budget
+    const brandList = brands.join(', ');
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -2925,76 +2887,63 @@ brandOptAnalyzeBtn.addEventListener('click', async () => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
+        max_tokens: 800,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: [{ type: 'text', text: 'You are a concise cooking expert. Give direct, practical brand recommendations. Plain prose only — no markdown, no asterisks.' }],
         messages: [{
           role: 'user',
-          content: `I'm shopping for ${ingredientName} and want to compare these brands:\n\n${brandList}\n\nPlease search for expert reviews of each brand's ${ingredientName} from authoritative cooking sources: Serious Eats, Cook's Illustrated, NYT Cooking, Wirecutter, Epicurious, Food52, Bon Appétit. Search each brand individually if needed.\n\nThen rank all ${brands.length} brands from best to worst for overall quality. Return ONLY a JSON array (no markdown), ranked #1 best first:\n[{"rank":1,"brand":"...","verdict":"2-3 sentence overall verdict on this brand's ${ingredientName}","bullets":["specific quality point","what sets it apart or holds it back","any notable use cases or caveats"],"sources":"sites consulted"}]\n\nBe specific, honest, and direct. If one is clearly the best, say so and explain why. Include what real cooks and critics say about each.`
+          content: 'Compare these ' + ingredientName + ' brands for overall quality: ' + brandList + '. Search for reviews, then rank them best to worst with 1-2 sentences each explaining why. End with your top pick.'
         }]
       })
     });
 
     const data = await resp.json();
-    if (data.error) throw new Error(data.error.message);
-
-    const rawText = data.content
-      .filter(b => b.type === 'text')
-      .map(b => b.text).join('')
-      .replace(/```json|```/g, '').trim();
-
-    let ranked;
-    try {
-      const jsonMatch = rawText.match(/\[[\s\S]*\]/);
-      ranked = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
-    } catch(e) {
-      throw new Error('Could not parse rankings — please try again.');
+    if (data.error) {
+      // Detect rate limit specifically and give helpful message
+      if (data.error.message?.includes('rate limit') || data.error.message?.includes('tokens per minute')) {
+        throw new Error('Rate limit hit — wait 30 seconds and try again. This resolves automatically as your account grows.');
+      }
+      throw new Error(data.error.message);
     }
 
-    renderBrandOptResults(ranked);
+    const reply = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text).join('').trim();
+
+    if (!reply) throw new Error('No response — please try again.');
+
+    renderBrandOptResults(reply);
 
   } catch(err) {
     brandOptStatus.style.display = 'none';
-    brandOptResults.innerHTML = `<div style="text-align:center;padding:20px;color:var(--terracotta);font-size:14px;">
-      ${escHtml(err.message || 'Something went wrong. Please try again.')}
-    </div>`;
+    brandOptResults.innerHTML = '<div style="text-align:center;padding:20px;color:var(--terracotta);font-size:14px;line-height:1.6;">'
+      + escHtml(err.message || 'Something went wrong. Please try again.') + '</div>';
     brandOptResults.style.display = 'block';
     brandOptAnalyzeBtn.style.display = 'block';
   }
 });
 
-function renderBrandOptResults(ranked) {
+function renderBrandOptResults(reply) {
   brandOptStatus.style.display = 'none';
-  const rankLabels = ['1st', '2nd', '3rd', '4th', '5th'];
 
-  const cardsHtml = ranked.map((r, i) => {
-    const isWinner = i === 0;
-    const rankClass = `r${i + 1}`;
-    const bulletsHtml = r.bullets?.length
-      ? `<ul class="bestopt-bullets">${r.bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul>`
-      : '';
-    const sourceHtml = r.sources
-      ? `<p class="bestopt-source">Sources: ${escHtml(r.sources)}</p>`
-      : '';
+  // reply is plain text — split into paragraphs and render as cards
+  const paragraphs = reply.split(/\n\n+/).filter(p => p.trim());
 
-    return `<div class="bestopt-card ${isWinner ? 'winner' : ''}">
-      <div class="bestopt-card-header">
-        <div class="bestopt-rank ${rankClass}">${rankLabels[i] || (i + 1)}</div>
-        <div class="bestopt-product-name">${escHtml(r.brand)}</div>
-        ${isWinner ? '<span class="bestopt-winner-badge">⭐ Best pick</span>' : ''}
-      </div>
-      <div class="bestopt-card-body">
-        <p class="bestopt-verdict">${escHtml(r.verdict)}</p>
-        ${bulletsHtml}
-        ${sourceHtml}
-      </div>
-    </div>`;
+  const cardsHtml = paragraphs.map((p, i) => {
+    const isFirst = i === 0;
+    const isLast = i === paragraphs.length - 1 && paragraphs.length > 1;
+    if (isLast) {
+      // Last paragraph as gold "top pick" tip
+      return '<div style="border-left:3px solid var(--gold);padding:8px 12px;background:var(--gold-light);border-radius:0 8px 8px 0;margin-bottom:8px;">'
+        + '<p style="font-size:13px;color:var(--ink);line-height:1.65;">' + escHtml(p) + '</p></div>';
+    }
+    return '<div style="background:var(--warm-white);border:0.5px solid var(--parchment);border-radius:10px;padding:12px;margin-bottom:8px;' + (isFirst ? 'border-left:3px solid var(--gold-dark);' : '') + '">'
+      + '<p style="font-size:13px;color:var(--ink);line-height:1.65;">' + escHtml(p) + '</p></div>';
   }).join('');
 
-  brandOptResults.innerHTML = `
-    <p style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-ghost);margin-bottom:12px;">Ranked by quality</p>
-    ${cardsHtml}
-    <p style="font-size:11px;color:var(--ink-ghost);margin-top:12px;line-height:1.6;text-align:center;">Rankings based on expert reviews. Always taste for yourself!</p>
-  `;
+  brandOptResults.innerHTML = '<p style="font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-ghost);margin-bottom:12px;">Brand comparison</p>'
+    + cardsHtml
+    + '<p style="font-size:11px;color:var(--ink-ghost);margin-top:12px;text-align:center;">Based on expert reviews. Always taste for yourself!</p>';
   brandOptResults.style.display = 'block';
   document.getElementById('brandOptSheet').scrollTop = 0;
 }
