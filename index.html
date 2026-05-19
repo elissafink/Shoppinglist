@@ -358,6 +358,7 @@ html, body {
   flex-direction: column;
   gap: 3px;
   pointer-events: none;
+  opacity: 0; /* hidden until swiped — prevents bleed-through on dimmed items */
 }
 .swipe-delete-bg svg {
   width: 20px; height: 20px;
@@ -379,8 +380,9 @@ html, body {
   border-bottom: none;
   position: relative;
   user-select: none;
-  background: var(--cream);
+  background: var(--cream); /* explicit bg ensures it covers the delete layer beneath */
   will-change: transform;
+  z-index: 1; /* sit above the absolute-positioned delete background */
 }
 
 .list-item.swiping { transition: none; }
@@ -490,6 +492,34 @@ html, body {
   transition: background 0.15s;
 }
 .add-btn:active { background: var(--terra-dark); }
+
+/* Side drawer */
+.drawer-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 12px; border-radius: 10px;
+  border: none; background: none;
+  font-family: 'DM Sans', sans-serif; font-size: 15px;
+  color: var(--ink); cursor: pointer; text-align: left; width: 100%;
+  transition: background 0.15s;
+}
+.drawer-item:active { background: var(--parchment); }
+.drawer-item svg { flex-shrink: 0; color: var(--ink-muted); }
+
+/* Menu planning cards */
+.menu-card { background:var(--warm-white);border:0.5px solid var(--parchment);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer; }
+.menu-card-name { font-size:16px;font-weight:500;color:var(--ink);margin-bottom:3px; }
+.menu-card-meta { font-size:12px;color:var(--ink-muted);margin-bottom:6px; }
+.menu-card-desc { font-size:13px;color:var(--ink-muted);line-height:1.5; }
+.menu-field-label { display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px; }
+.menu-input { width:100%;height:42px;padding:0 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;margin-bottom:12px; }
+.menu-textarea { width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;resize:none;line-height:1.5;margin-bottom:12px; }
+
+/* Timeline task rows */
+.timeline-task { display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--parchment); }
+.timeline-task:last-child { border-bottom:none; }
+.task-time { font-size:12px;font-weight:600;color:var(--terracotta);white-space:nowrap;min-width:52px;padding-top:2px; }
+.task-text { flex:1;font-size:13px;color:var(--ink);line-height:1.5;background:none;border:none;font-family:'DM Sans',sans-serif;outline:none;resize:none;width:100%;padding:0; }
+.task-delete { background:none;border:none;cursor:pointer;color:var(--ink-ghost);font-size:16px;padding:0;flex-shrink:0; }
 
 /* Sub-screen back link — used on Recipes, Settings, Library, and any future views */
 .back-link {
@@ -988,6 +1018,9 @@ html, body {
         <button class="icon-btn" id="sortMenuBtn" title="Sort options">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/></svg>
         </button>
+        <button class="icon-btn" id="hamburgerBtn" title="Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
       </div>
     </div>
     <h1 class="page-title">Shopping List</h1>
@@ -1022,10 +1055,9 @@ html, body {
         <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
         <span>Library</span>
       </button>
-      <button class="nav-btn" data-view="settings" id="settingsNavBtn">
-        <svg viewBox="0 0 24 24" style="position:relative"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>Settings</span>
-        <span id="settingsAlert" style="display:none;position:absolute;top:2px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--terracotta);"></span>
+      <button class="nav-btn" data-view="menus">
+        <svg viewBox="0 0 24 24"><path d="M3 5h18M3 10h18M3 15h12M3 20h8"/><circle cx="19" cy="17.5" r="3.5"/><path d="M19 16v3M17.5 17.5h3"/></svg>
+        <span>Menus</span>
       </button>
     </div>
     <!-- Add row -->
@@ -1046,16 +1078,33 @@ html, body {
 </div>
 
 <!-- Library view -->
-<div id="libraryView" style="display:none;position:absolute;top:0;left:0;right:0;background:var(--cream);z-index:50;overflow-y:auto;padding:calc(var(--safe-top) + 0px) 20px 40px;">
-  <div style="padding-top:16px;margin-bottom:20px;">
+<div id="libraryView" style="display:none;position:absolute;top:0;left:0;right:0;background:var(--cream);z-index:50;display:none;flex-direction:column;">
+  <!-- Library header -->
+  <div style="padding:calc(var(--safe-top) + 16px) 20px 0;flex-shrink:0;background:var(--cream);">
     <button class="back-link" onclick="showView('list')">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       <span>Kitchen Companion</span>
     </button>
-    <h1 style="font-family:'Lora',serif;font-size:28px;font-weight:500;color:var(--ink);">My Substitutions</h1>
-    <p style="font-size:13px;color:var(--ink-muted);margin-top:3px;">Saved from the substitution advisor, organized by ingredient.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <h1 style="font-family:'Lora',serif;font-size:28px;font-weight:500;color:var(--ink);">Library</h1>
+      <button id="libAddNewBtn" style="height:34px;padding:0 14px;border-radius:999px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add entry
+      </button>
+    </div>
+    <!-- Sub-tabs -->
+    <div class="sort-tabs" style="margin-bottom:12px;">
+      <button class="sort-tab active" data-ltab="subs">🔄 Substitutions</button>
+      <button class="sort-tab" data-ltab="picks">⭐ Product Picks</button>
+    </div>
   </div>
-  <div id="libraryList"></div>
+  <!-- Content panels -->
+  <div id="libSubsPanel" style="flex:1;overflow-y:auto;padding:0 20px 40px;">
+    <div id="libraryList"></div>
+  </div>
+  <div id="libPicksPanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px 40px;">
+    <div id="libPicksList"></div>
+  </div>
 </div>
 <div id="recipesView" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:var(--cream);z-index:50;display:none;flex-direction:column;">
 
@@ -1090,71 +1139,30 @@ html, body {
   <div id="recipeImportPanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px 40px;">
 
     <!-- URL input -->
-    <div style="margin-bottom:14px;">
-      <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Recipe URL</label>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Recipe URL <span style="font-weight:400;text-transform:none;letter-spacing:0;">(works for most open sites)</span></label>
       <div style="display:flex;gap:8px;">
         <input id="recipeUrlInput" type="url" placeholder="https://cooking.nytimes.com/recipes/…" autocomplete="off" autocorrect="off"
           style="flex:1;height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;">
         <button id="recipeFetchBtn" style="height:44px;padding:0 16px;border-radius:10px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;">Fetch</button>
       </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:5px;">
-        <button id="diagToggleBtn" style="background:none;border:none;font-size:12px;color:var(--ink-ghost);cursor:pointer;padding:0;text-decoration:underline;">What did Claude see? (debug)</button>
+      <div id="diagOutput" style="display:none;margin-top:8px;background:var(--parchment);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--ink-muted);font-family:monospace;white-space:pre-wrap;max-height:120px;overflow-y:auto;line-height:1.5;"></div>
+    </div>
+
+    <!-- NYT / recipe name lookup — the reliable fallback -->
+    <div style="background:var(--gold-light);border-radius:12px;border:1px solid var(--gold);padding:14px;margin-bottom:12px;">
+      <p style="font-size:13px;font-weight:600;color:var(--gold-dark);margin-bottom:3px;">🍳 NYT Cooking or any well-known recipe</p>
+      <p style="font-size:12px;color:var(--gold-dark);opacity:0.85;margin-bottom:10px;">Type the recipe name — Claude finds it directly without needing a URL.</p>
+      <div style="display:flex;gap:8px;">
+        <input id="recipeNameLookupInput" type="text" placeholder="e.g. NYT Flourless Fudgy Brownies"
+          style="flex:1;height:42px;padding:0 12px;border-radius:10px;border:1px solid var(--gold);background:white;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;">
+        <button id="recipeNameLookupBtn" style="height:42px;padding:0 14px;border-radius:10px;border:none;background:var(--gold-dark);color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;">Find it</button>
       </div>
-      <!-- Diagnostic output — hidden by default -->
-      <div id="diagOutput" style="display:none;margin-top:8px;background:var(--parchment);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--ink-muted);font-family:monospace;white-space:pre-wrap;max-height:160px;overflow-y:auto;line-height:1.5;"></div>
     </div>
 
     <!-- Paywall helper — shown when URL fetch fails -->
-    <div id="paywallHelper" style="display:none;background:var(--warm-white);border-radius:14px;border:1px solid var(--parchment);overflow:hidden;margin-bottom:16px;">
-      <div style="background:var(--gold-light);padding:12px 16px;display:flex;align-items:center;gap:10px;">
-        <span style="font-size:20px;">🔒</span>
-        <div>
-          <p style="font-size:14px;font-weight:600;color:var(--gold-dark);margin-bottom:1px;">Page blocked — likely the "Open in app" prompt</p>
-          <p style="font-size:12px;color:var(--gold-dark);opacity:0.85;">NYT redirects automated fetches to an app-install page. Use one of these workarounds:</p>
-        </div>
-      </div>
-      <div style="padding:14px 16px;">
-
-        <p style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Option 1 — Screenshot the ingredients (fastest)</p>
-        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
-          <div style="display:flex;gap:10px;align-items:flex-start;">
-            <span style="width:20px;height:20px;border-radius:50%;background:var(--terracotta);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">1</span>
-            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Open the recipe in the NYT Cooking app, screenshot the ingredients list (1–3 screenshots)</p>
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-start;">
-            <span style="width:20px;height:20px;border-radius:50%;background:var(--terracotta);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">2</span>
-            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Go back to the main list → tap the 📷 camera icon → select your screenshots</p>
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-start;">
-            <span style="width:20px;height:20px;border-radius:50%;background:var(--terracotta);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">3</span>
-            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Type the recipe name in the field that appears — it gets tagged on every ingredient</p>
-          </div>
-        </div>
-
-        <div style="height:0.5px;background:var(--parchment);margin-bottom:14px;"></div>
-
-        <p style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Option 2 — Copy &amp; paste the recipe text</p>
-        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
-          <div style="display:flex;gap:10px;align-items:flex-start;">
-            <span style="width:20px;height:20px;border-radius:50%;background:var(--ink-ghost);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">1</span>
-            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">In the NYT Cooking app, tap the recipe title — then tap <strong style="color:var(--ink);">Share</strong> → <strong style="color:var(--ink);">Copy Link</strong></p>
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-start;">
-            <span style="width:20px;height:20px;border-radius:50%;background:var(--ink-ghost);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">2</span>
-            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Open that link in <strong style="color:var(--ink);">Safari</strong> (not Chrome) while logged in — tap &amp; hold the ingredient text to select it all, then Copy</p>
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-start;">
-            <span style="width:20px;height:20px;border-radius:50%;background:var(--ink-ghost);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">3</span>
-            <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">Paste in the box below</p>
-          </div>
-        </div>
-
-        <div style="height:0.5px;background:var(--parchment);margin-bottom:14px;"></div>
-
-        <p style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Option 3 — Try the gift link directly</p>
-        <p style="font-size:13px;color:var(--ink-muted);line-height:1.5;">If your URL has <code style="font-size:11px;background:var(--parchment);padding:1px 5px;border-radius:4px;">unlocked_article_code</code> in it, paste it below. Claude will try to read it as plain text without triggering the app redirect.</p>
-
-      </div>
+    <div id="paywallHelper" style="display:none;background:var(--urgent-bg);border-radius:10px;border:1px solid var(--urgent-border);padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--terracotta);line-height:1.5;">
+      🔒 URL blocked. Try typing the recipe name in the gold box above, or paste the recipe text below.
     </div>
 
     <!-- Divider -->
@@ -1295,11 +1303,36 @@ html, body {
     <p style="font-size:12px;color:var(--ink-ghost);margin-top:10px;line-height:1.5;">Tip: set a monthly spend limit in the Billing section — $5–10/month is more than enough for personal use.</p>
   </div>
 
+  <!-- Export / Import data -->
+  <div style="background:var(--warm-white);border-radius:12px;border:0.5px solid var(--parchment);padding:20px;margin-bottom:16px;">
+    <p style="font-size:14px;font-weight:500;color:var(--ink);margin-bottom:4px;">Backup &amp; restore</p>
+    <p style="font-size:13px;color:var(--ink-muted);margin-bottom:14px;line-height:1.5;">Export your library, recipes, and list to a file you can save to iCloud or Files. Import it back into any new version of the app.</p>
+
+    <button id="exportDataBtn" style="width:100%;height:44px;border-radius:10px;border:none;background:var(--sage-dark);color:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export my data
+    </button>
+
+    <button id="importDataBtn" style="width:100%;height:44px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Import from file
+    </button>
+    <input type="file" id="importFileInput" accept=".json" style="display:none">
+
+    <div id="importStatus" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;font-size:13px;line-height:1.5;"></div>
+
+    <p style="font-size:12px;color:var(--ink-ghost);margin-top:10px;line-height:1.5;">💡 Your library entries and recipes are the most important to back up. Export before updating to a new version of the app.</p>
+  </div>
+
   <!-- Clear data -->
   <div style="background:var(--warm-white);border-radius:12px;border:0.5px solid var(--parchment);padding:20px;">
-    <p style="font-size:14px;font-weight:500;color:var(--ink);margin-bottom:6px;">Data</p>
-    <p style="font-size:13px;color:var(--ink-muted);margin-bottom:14px;">All your list items and recipe library are saved locally on this device.</p>
-    <button id="clearAllDataBtn" style="background:none;border:1px solid #e8a0a0;color:#c0392b;font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 16px;border-radius:8px;cursor:pointer;">Clear all list data</button>
+    <p style="font-size:14px;font-weight:500;color:var(--ink);margin-bottom:6px;">Clear data</p>
+    <p style="font-size:13px;color:var(--ink-muted);margin-bottom:14px;">Permanently delete items from this device. Export first if you want to keep them.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button id="clearAllDataBtn" style="background:none;border:1px solid #e8a0a0;color:#c0392b;font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;">Clear shopping list</button>
+      <button id="clearLibraryBtn" style="background:none;border:1px solid #e8a0a0;color:#c0392b;font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;">Clear library</button>
+      <button id="clearRecipesBtn" style="background:none;border:1px solid #e8a0a0;color:#c0392b;font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;">Clear recipes</button>
+    </div>
   </div>
 </div>
 
@@ -1450,6 +1483,68 @@ html, body {
   </div>
 </div>
 
+<!-- Manual Library Entry Modal -->
+<div class="modal-overlay" id="manualLibModal">
+  <div class="modal-sheet" style="max-height:calc(100% - env(safe-area-inset-top,0px) - 80px);">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h2 class="modal-title" id="manualLibTitle" style="margin-bottom:0;">Add entry</h2>
+      <button onclick="document.getElementById('manualLibModal').classList.remove('open')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--parchment);color:var(--ink-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <input type="hidden" id="manualLibType" value="subs">
+
+    <div style="margin-bottom:12px;">
+      <label id="manualLibIngLabel" style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Ingredient</label>
+      <input id="manualLibIngInput" type="text" placeholder="e.g. Sugar, Butter, All-purpose flour"
+        style="width:100%;height:42px;padding:0 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;">
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <label id="manualLibSubLabel" style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Substitution / product used</label>
+      <input id="manualLibSubInput" type="text" placeholder="e.g. Allulose instead of sugar"
+        style="width:100%;height:42px;padding:0 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;">
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Claude's advice <span style="font-weight:400;text-transform:none;">(optional — paste it in)</span></label>
+      <textarea id="manualLibAdviceInput" rows="3" placeholder="Paste Claude's advice text here if you have it…"
+        style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;resize:none;line-height:1.5;"></textarea>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Source URL <span style="font-weight:400;text-transform:none;">(optional — becomes a link)</span></label>
+      <input id="manualLibUrlInput" type="url" placeholder="https://…"
+        style="width:100%;height:42px;padding:0 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;">
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">My notes <span style="font-weight:400;text-transform:none;">(optional)</span></label>
+      <textarea id="manualLibNotesInput" rows="2" placeholder="How did it go? What would you change?"
+        style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;resize:none;line-height:1.5;"></textarea>
+    </div>
+
+    <button id="manualLibSaveBtn" style="width:100%;height:48px;border-radius:12px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;">Save to Library</button>
+  </div>
+</div>
+
+<!-- Edit Quantity Modal -->
+<div class="modal-overlay" id="editQtyModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h2 class="modal-title" id="editQtyTitle" style="margin-bottom:0;">Edit quantity</h2>
+      <button onclick="document.getElementById('editQtyModal').classList.remove('open')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--parchment);color:var(--ink-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--ink-muted);margin-bottom:12px;">Enter the quantity — include units if relevant (e.g. "2 cups", "1 lb", "3 large").</p>
+    <input id="editQtyInput" type="text" placeholder="e.g. 2 cups"
+      style="width:100%;height:48px;padding:0 14px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:16px;color:var(--ink);outline:none;margin-bottom:12px;">
+    <div style="display:flex;gap:8px;">
+      <button id="editQtyClearBtn" style="height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--parchment);background:var(--warm-white);color:var(--ink-muted);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;">Clear</button>
+      <button id="editQtySaveBtn" style="flex:1;height:44px;border-radius:10px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Save Substitution Modal -->
 <div class="modal-overlay" id="saveSubModal">
   <div class="modal-sheet">
@@ -1485,6 +1580,9 @@ html, body {
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- Voice overlay -->
+<div class="voice-overlay" id="voiceOverlay">
   <div class="voice-orb" id="voiceOrb">
     <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
   </div>
@@ -1567,6 +1665,63 @@ html, body {
     <!-- Results -->
     <div id="bestOptResults" style="display:none;"></div>
   </div>
+</div>
+
+<!-- Side drawer (hamburger menu) -->
+<div id="drawerOverlay" style="position:fixed;inset:0;background:rgba(26,18,8,0.5);z-index:200;opacity:0;pointer-events:none;transition:opacity 0.25s;"></div>
+<div id="sideDrawer" style="position:fixed;top:0;right:0;bottom:0;width:80%;max-width:300px;background:var(--cream);z-index:201;transform:translateX(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);padding:calc(var(--safe-top) + 20px) 24px calc(var(--safe-bottom) + 24px);overflow-y:auto;display:flex;flex-direction:column;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+    <span style="font-family:'Lora',serif;font-size:18px;font-weight:500;color:var(--ink);">Kitchen Companion</span>
+    <button id="drawerCloseBtn" style="background:none;border:none;cursor:pointer;color:var(--ink-muted);padding:4px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <nav style="display:flex;flex-direction:column;gap:2px;flex:1;">
+    <button class="drawer-item" onclick="closeDrawer();showView('settings');">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+    <button class="drawer-item" onclick="closeDrawer();showView('list');">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Shopping List
+    </button>
+    <button class="drawer-item" onclick="closeDrawer();showView('recipes');">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Recipes
+    </button>
+    <button class="drawer-item" onclick="closeDrawer();showView('library');">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      Library
+    </button>
+    <button class="drawer-item" onclick="closeDrawer();showView('menus');">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Menu Planning
+    </button>
+  </nav>
+  <p style="font-size:11px;color:var(--ink-ghost);text-align:center;margin-top:20px;">Kitchen Companion · Your personal cooking app</p>
+</div>
+
+<!-- Menu Planning view -->
+<div id="menusView" style="display:none;position:absolute;top:0;left:0;right:0;background:var(--cream);z-index:50;display:none;flex-direction:column;">
+  <div style="padding:calc(var(--safe-top) + 16px) 20px 0;flex-shrink:0;background:var(--cream);">
+    <button class="back-link" onclick="showView('list')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      <span>Kitchen Companion</span>
+    </button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <h1 style="font-family:'Lora',serif;font-size:28px;font-weight:500;color:var(--ink);">Menu Planning</h1>
+      <button id="newMenuBtn" style="height:34px;padding:0 14px;border-radius:999px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New menu
+      </button>
+    </div>
+    <div class="sort-tabs" style="margin-bottom:12px;">
+      <button class="sort-tab active" data-mtab="saved">My Menus</button>
+      <button class="sort-tab" data-mtab="create">Create / Edit</button>
+    </div>
+  </div>
+  <div id="menusSavedPanel" style="flex:1;overflow-y:auto;padding:0 20px 40px;"><div id="menusSavedList"></div></div>
+  <div id="menusCreatePanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px 40px;"></div>
 </div>
 
 <!-- Brand name advisor modal -->
@@ -1699,14 +1854,10 @@ function render() {
   let groups = [];
   if (state.sortMode === 'category') {
     const map = {};
-    // Urgent items first
-    const urgentActive = items.filter(i => i.urgency === 'urgent' && !i.checked);
-    if (urgentActive.length) {
-      groups.push({ label: '🔴 Need Now', items: urgentActive });
-    }
-    // Regular items by category
-    const regular = items.filter(i => i.urgency !== 'urgent' && i.urgency !== 'next' && i.urgency !== 'pantry' && !i.checked);
-    regular.forEach(item => {
+    // All active (non-next-trip, non-checked) items sort into their category aisle.
+    // urgent and pantry badges still show on the item, but they sort by aisle not urgency.
+    const active = items.filter(i => i.urgency !== 'next' && !i.checked);
+    active.forEach(item => {
       const cat = item.category || 'Household & Other';
       if (!map[cat]) map[cat] = [];
       map[cat].push(item);
@@ -1717,10 +1868,7 @@ function render() {
         groups.push({ label: `${icon} ${cat}`, items: map[cat] });
       }
     });
-    // Pantry check items
-    const pantry = items.filter(i => i.urgency === 'pantry' && !i.checked);
-    if (pantry.length) groups.push({ label: '🔍 Check Pantry', items: pantry });
-    // Next trip
+    // Next trip stays separate — it's genuinely deferred to another shopping trip
     const next = items.filter(i => i.urgency === 'next' && !i.checked);
     if (next.length) groups.push({ label: '🕐 Next Trip', items: next });
     // Checked
@@ -2003,6 +2151,10 @@ function openItemModal(id) {
   `).join('');
 
   list.innerHTML = `
+    <li class="action-item" data-action="editqty">
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Edit quantity
+    </li>
     <li class="action-item" data-action="bestopt">
       <svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
       Find best option using photos
@@ -2045,7 +2197,8 @@ function openItemModal(id) {
   list.querySelectorAll('.action-item').forEach(el => {
     el.addEventListener('click', () => {
       const action = el.dataset.action;
-      if (action === 'bestopt') { closeModal(); openBestOptModal(id); }
+      if (action === 'editqty') { closeModal(); openEditQtyModal(id); }
+      else if (action === 'bestopt') { closeModal(); openBestOptModal(id); }
       else if (action === 'brandopt') { closeModal(); openBrandOptModal(id); }
       else if (action === 'subadvisor') { closeModal(); const it = state.items.find(i=>i.id===id); if(it) openSubModal(it.name, it.quantity, it.recipes?.[0]||''); }
       else if (action === 'urgent') { setUrgency(id, 'urgent'); closeModal(); }
@@ -2231,7 +2384,6 @@ function saveApiKey(key) {
 function updateApiKeyStatus() {
   const key = getApiKey();
   const statusEl = document.getElementById('apiKeyStatus');
-  const alertDot = document.getElementById('settingsAlert');
   if (key) {
     statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--sage-light);border-radius:8px;font-size:13px;color:var(--sage-dark);">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -2243,13 +2395,11 @@ function updateApiKeyStatus() {
       document.getElementById('apiKeyInput').value = '';
       updateApiKeyStatus();
     });
-    alertDot.style.display = 'none';
   } else {
     statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--urgent-bg);border-radius:8px;font-size:13px;color:var(--terracotta);">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       No key — screenshot scanning won't work yet
     </div>`;
-    alertDot.style.display = 'block';
   }
 }
 
@@ -2309,7 +2459,7 @@ document.getElementById('apiKeyTestBtn').addEventListener('click', async () => {
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 20,
         messages: [{ role: 'user', content: 'Reply with just the word: working' }]
       })
@@ -2348,14 +2498,134 @@ document.getElementById('apiKeyTestBtn').addEventListener('click', async () => {
 });
 
 // Clear data
+// ── Export / Import / Clear ───────────────────────────────────────────────────
+
+document.getElementById('exportDataBtn').addEventListener('click', () => {
+  const exportData = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    description: 'Kitchen Companion backup',
+    data: {
+      subLibrary:    loadSubLibrary(),
+      productPicks:  loadProductPicks(),
+      recipes:       loadRecipes(),
+      menus:         loadMenus(),
+      shoppingList:  state.items,
+      nextId:        state.nextId
+    }
+  };
+
+  const json = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const date = new Date().toISOString().slice(0, 10);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'kitchen-companion-backup-' + date + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Data exported ✓ — save the file to iCloud or Files');
+});
+
+document.getElementById('importDataBtn').addEventListener('click', () => {
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('importFileInput').click();
+});
+
+document.getElementById('importFileInput').addEventListener('change', () => {
+  const file = document.getElementById('importFileInput').files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('importStatus');
+  statusEl.style.display = 'block';
+  statusEl.style.background = 'var(--parchment)';
+  statusEl.style.color = 'var(--ink-muted)';
+  statusEl.textContent = 'Reading file…';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!parsed.data || parsed.version !== 1) throw new Error('Unrecognised file format. Make sure you\'re using a Kitchen Companion export file.');
+
+      const d = parsed.data;
+      const counts = { subs: 0, picks: 0, recipes: 0, items: 0 };
+
+      // Merge strategy: add imported entries, skip duplicates by id
+      if (d.subLibrary?.length) {
+        const existing = loadSubLibrary();
+        const existingIds = new Set(existing.map(s => s.id));
+        const toAdd = d.subLibrary.filter(s => !existingIds.has(s.id));
+        saveSubLibrary([...toAdd, ...existing]);
+        counts.subs = toAdd.length;
+      }
+      if (d.productPicks?.length) {
+        const existing = loadProductPicks();
+        const existingIds = new Set(existing.map(p => p.id));
+        const toAdd = d.productPicks.filter(p => !existingIds.has(p.id));
+        saveProductPicks([...toAdd, ...existing]);
+        counts.picks = toAdd.length;
+      }
+      if (d.recipes?.length) {
+        const existing = loadRecipes();
+        const existingIds = new Set(existing.map(r => r.id));
+        const toAdd = d.recipes.filter(r => !existingIds.has(r.id));
+        saveRecipes([...toAdd, ...existing]);
+        counts.recipes = toAdd.length;
+      }
+      if (d.menus?.length) {
+        const existing = loadMenus();
+        const existingIds = new Set(existing.map(m => m.id));
+        const toAdd = d.menus.filter(m => !existingIds.has(m.id));
+        saveMenus([...toAdd, ...existing]);
+      }
+
+      if (d.shoppingList?.length) {
+        const toAdd = d.shoppingList.filter(i => !existingIds.has(i.id));
+        state.items = [...toAdd, ...state.items];
+        if (d.nextId && d.nextId > state.nextId) state.nextId = d.nextId;
+        saveState();
+        render();
+        counts.items = toAdd.length;
+      }
+
+      statusEl.style.background = 'var(--sage-light)';
+      statusEl.style.color = 'var(--sage-dark)';
+      statusEl.innerHTML = '✓ Import complete!<br>'
+        + counts.subs    + ' substitutions, '
+        + counts.picks   + ' product picks, '
+        + counts.recipes + ' recipes, '
+        + counts.items   + ' list items added.';
+
+    } catch(err) {
+      statusEl.style.background = 'var(--urgent-bg)';
+      statusEl.style.color = 'var(--terracotta)';
+      statusEl.textContent = '✕ ' + (err.message || 'Could not read file. Make sure it\'s a Kitchen Companion backup.');
+    }
+  };
+  reader.readAsText(file);
+});
+
 document.getElementById('clearAllDataBtn').addEventListener('click', () => {
-  if (confirm('Clear all list items? This cannot be undone.')) {
-    state.items = [];
-    state.nextId = 1;
-    saveState();
-    render();
-    showToast('List cleared');
-  }
+  if (!confirm('Clear all shopping list items? This cannot be undone. Export first if you want to keep them.')) return;
+  state.items = [];
+  state.nextId = 1;
+  saveState();
+  render();
+  showToast('Shopping list cleared');
+});
+
+document.getElementById('clearLibraryBtn').addEventListener('click', () => {
+  if (!confirm('Clear your entire library (substitutions + product picks)? Export first if you want to keep them.')) return;
+  saveSubLibrary([]);
+  saveProductPicks([]);
+  showToast('Library cleared');
+});
+
+document.getElementById('clearRecipesBtn').addEventListener('click', () => {
+  if (!confirm('Clear all saved recipes? Export first if you want to keep them.')) return;
+  saveRecipes([]);
+  showToast('Recipes cleared');
 });
 
 // Prepopulate input if key exists (masked)
@@ -2369,19 +2639,22 @@ if (existingKey) {
 const settingsView = document.getElementById('settingsView');
 const recipesView  = document.getElementById('recipesView');
 const libraryView  = document.getElementById('libraryView');
+const menusView    = document.getElementById('menusView');
 const listHeader   = document.querySelector('.header');
 const listScroll   = document.getElementById('listScroll');
 const bottomAddRow = document.querySelector('.add-row');
 
 function showView(view) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.nav-btn[data-view="${view}"]`).classList.add('active');
+  const activeBtn = document.querySelector(`.nav-btn[data-view="${view}"]`);
+  if (activeBtn) activeBtn.classList.add('active');
 
   const bottomBarH = document.querySelector('.bottom-bar').offsetHeight;
 
   settingsView.style.display  = 'none';
   recipesView.style.display   = 'none';
   libraryView.style.display   = 'none';
+  menusView.style.display     = 'none';
   listHeader.style.display    = 'block';
   listScroll.style.display    = 'block';
   bottomAddRow.style.display  = 'flex';
@@ -2404,9 +2677,17 @@ function showView(view) {
     listHeader.style.display   = 'none';
     listScroll.style.display   = 'none';
     bottomAddRow.style.display = 'none';
-    libraryView.style.display  = 'block';
+    libraryView.style.display  = 'flex';
     libraryView.style.bottom   = bottomBarH + 'px';
     renderSubLibrary();
+    renderProductPicksLibrary();
+  } else if (view === 'menus') {
+    listHeader.style.display   = 'none';
+    listScroll.style.display   = 'none';
+    bottomAddRow.style.display = 'none';
+    menusView.style.display    = 'flex';
+    menusView.style.bottom     = bottomBarH + 'px';
+    renderSavedMenus();
   }
 }
 
@@ -2495,18 +2776,29 @@ function closeImgModal() {
 }
 
 function renderImgPreviews() {
-  imgPreviews.innerHTML = imgFiles.map((f, i) => {
-    const url = URL.createObjectURL(f);
-    return `<div class="img-thumb-wrap">
-      <img class="img-thumb" src="${url}" alt="Screenshot ${i+1}">
-      <button class="img-thumb-remove" data-idx="${i}" aria-label="Remove">✕</button>
-    </div>`;
-  }).join('');
-  imgPreviews.querySelectorAll('.img-thumb-remove').forEach(btn => {
+  imgPreviews.innerHTML = '';
+  imgFiles.forEach((f, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'img-thumb-wrap';
+    const img = document.createElement('img');
+    img.className = 'img-thumb';
+    img.alt = 'Screenshot ' + (i + 1);
+    // Use FileReader for reliable display of all image types including HEIC
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; };
+    reader.readAsDataURL(f);
+    const btn = document.createElement('button');
+    btn.className = 'img-thumb-remove';
+    btn.setAttribute('aria-label', 'Remove');
+    btn.textContent = '✕';
+    btn.dataset.idx = i;
     btn.addEventListener('click', () => {
-      imgFiles.splice(parseInt(btn.dataset.idx), 1);
+      imgFiles.splice(i, 1);
       renderImgPreviews();
     });
+    wrap.appendChild(img);
+    wrap.appendChild(btn);
+    imgPreviews.appendChild(wrap);
   });
 }
 
@@ -2534,12 +2826,14 @@ async function parseImages() {
   imgPickBtn.style.display = 'none';
   imgResults.style.display = 'none';
   imgParseStatus.style.display = 'block';
-  imgStatusText.textContent = `Reading ${imgFiles.length} screenshot${imgFiles.length > 1 ? 's' : ''}…`;
+  imgStatusText.textContent = 'Reading ' + imgFiles.length + ' screenshot' + (imgFiles.length > 1 ? 's' : '') + '…';
 
   try {
     const imageBlocks = await Promise.all(imgFiles.map(async (f) => {
       const b64 = await fileToBase64(f);
-      const mt = f.type || 'image/jpeg';
+      // Normalise unsupported types (HEIC, HEIF) to jpeg
+      const mt = (f.type && f.type !== 'image/heic' && f.type !== 'image/heif')
+        ? f.type : 'image/jpeg';
       return { type: 'image', source: { type: 'base64', media_type: mt, data: b64 } };
     }));
 
@@ -2552,19 +2846,14 @@ async function parseImages() {
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
+        system: [{ type: 'text', text: 'You extract ingredients from recipe screenshots. List every ingredient with its quantity. Plain text only — one ingredient per line in the format: QUANTITY | INGREDIENT NAME. No headers, no bullets, no other text.' }],
         messages: [{
           role: 'user',
           content: [
             ...imageBlocks,
-            {
-              type: 'text',
-              text: `These are screenshots from a recipe. Extract every ingredient listed.
-Return ONLY a JSON array, no other text, no markdown fences. Each element:
-{"name":"ingredient name","quantity":"amount and unit or empty string","category":"one of: Produce|Dairy & Eggs|Meat & Seafood|Bakery & Bread|Pantry & Dry Goods|Canned & Jarred|Frozen|Beverages|Spices & Condiments|Household & Other"}
-If you see the same ingredient twice, combine them. Only include actual ingredients, not instructions.`
-            }
+            { type: 'text', text: 'List every ingredient you see in ' + (imgFiles.length > 1 ? 'these screenshots' : 'this screenshot') + '. One per line: QUANTITY | INGREDIENT NAME. If no quantity is shown, leave the quantity blank but keep the pipe character.' }
           ]
         }]
       })
@@ -2572,16 +2861,30 @@ If you see the same ingredient twice, combine them. Only include actual ingredie
 
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
-    const text = data.content?.map(b => b.text || '').join('') || '';
-    const clean = text.replace(/```json|```/g, '').trim();
-    parsedIngredients = JSON.parse(clean);
+
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+    if (!text) throw new Error('No response from API — please try again.');
+
+    // Parse "QUANTITY | NAME" lines into ingredient objects
+    parsedIngredients = text.split('\n')
+      .map(line => line.trim())
+      .filter(line => line && line.includes('|'))
+      .map(line => {
+        const parts = line.split('|');
+        const quantity = (parts[0] || '').trim();
+        const name = (parts.slice(1).join('|') || '').trim();
+        return { name, quantity, category: guessCategory(name) };
+      })
+      .filter(ing => ing.name);
+
+    if (!parsedIngredients.length) throw new Error('No ingredients found — try a clearer screenshot.');
 
     renderParsedResults();
   } catch (err) {
     imgParseStatus.style.display = 'block';
     imgStatusText.textContent = err.message?.includes('401') || err.message?.includes('auth')
       ? 'Invalid API key. Check your key in Settings.'
-      : 'Could not read the images. Try again or add ingredients manually.';
+      : (err.message || 'Could not read the images. Try again or add ingredients manually.');
     imgPickBtn.style.display = 'flex';
     imgPickBtn.textContent = 'Try different screenshots';
   }
@@ -2639,6 +2942,56 @@ const bestOptStatus   = document.getElementById('bestOptStatus');
 const bestOptStatusText = document.getElementById('bestOptStatusText');
 const bestOptAnalyzeBtn = document.getElementById('bestOptAnalyzeBtn');
 const bestOptResults  = document.getElementById('bestOptResults');
+
+// ── Edit Quantity ─────────────────────────────────────────────────────────────
+
+let editQtyItemId = null;
+
+function openEditQtyModal(id) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  editQtyItemId = id;
+  document.getElementById('editQtyTitle').textContent = item.name;
+  document.getElementById('editQtyInput').value = item.quantity || '';
+  document.getElementById('editQtyModal').classList.add('open');
+  setTimeout(() => {
+    const input = document.getElementById('editQtyInput');
+    input.focus();
+    input.select();
+  }, 300);
+}
+
+document.getElementById('editQtyModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('editQtyModal')) document.getElementById('editQtyModal').classList.remove('open');
+});
+
+document.getElementById('editQtySaveBtn').addEventListener('click', () => {
+  if (!editQtyItemId) return;
+  const item = state.items.find(i => i.id === editQtyItemId);
+  if (!item) return;
+  item.quantity = document.getElementById('editQtyInput').value.trim();
+  saveState();
+  render();
+  document.getElementById('editQtyModal').classList.remove('open');
+  showToast('Quantity updated ✓');
+});
+
+document.getElementById('editQtyClearBtn').addEventListener('click', () => {
+  if (!editQtyItemId) return;
+  const item = state.items.find(i => i.id === editQtyItemId);
+  if (!item) return;
+  item.quantity = '';
+  saveState();
+  render();
+  document.getElementById('editQtyModal').classList.remove('open');
+  showToast('Quantity cleared');
+});
+
+document.getElementById('editQtyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('editQtySaveBtn').click();
+});
+
+// ── Best Option Modal ─────────────────────────────────────────────────────────
 
 function openBestOptModal(id) {
   bestOptItemId = id;
@@ -2748,10 +3101,9 @@ bestOptAnalyzeBtn.addEventListener('click', async () => {
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 900,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        system: [{ type: 'text', text: 'You are a concise cooking expert helping someone shop in a grocery store. Be direct and practical. Plain prose only.' }],
         messages: [{
           role: 'user',
           content: [
@@ -2811,6 +3163,12 @@ function renderBestOptResults(reply) {
     + '<div style="text-align:center;margin-top:14px;"><button onclick="resetBestOpt()" style="background:none;border:1px solid var(--parchment);border-radius:8px;padding:8px 20px;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--ink-muted);cursor:pointer;">🔄 Scan new photos</button></div>';
   bestOptResults.style.display = 'block';
   document.getElementById('bestOptSheet').scrollTop = 0;
+
+  // Add Save to Product Picks button
+  const item = state.items.find(i => i.id === bestOptItemId);
+  const ingredientName = item ? item.name : 'ingredient';
+  const saveBtn = showProductPickSaveButton(ingredientName, 'Photo comparison', reply, 'photo');
+  bestOptResults.appendChild(saveBtn);
 }
 
 // ── Brand Name Advisor ────────────────────────────────────────────────────────
@@ -2892,10 +3250,9 @@ brandOptAnalyzeBtn.addEventListener('click', async () => {
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 900,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        system: [{ type: 'text', text: 'You are a concise cooking expert. Give direct, practical brand recommendations. Plain prose only — no markdown, no asterisks.' }],
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -2949,6 +3306,12 @@ function renderBrandOptResults(reply) {
     + '<div style="text-align:center;margin-top:14px;"><button onclick="resetBrandOpt()" style="background:none;border:1px solid var(--parchment);border-radius:8px;padding:8px 20px;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--ink-muted);cursor:pointer;">🔄 Search again</button></div>';
   brandOptResults.style.display = 'block';
   document.getElementById('brandOptSheet').scrollTop = 0;
+
+  // Add Save to Product Picks button
+  const item = state.items.find(i => i.id === brandOptItemId);
+  const ingredientName = item ? item.name : 'ingredient';
+  const saveBtn = showProductPickSaveButton(ingredientName, brandOptInput.value.trim() || 'Best brands search', reply, 'brand');
+  brandOptResults.appendChild(saveBtn);
 }
 
 // ── Recipe Library ─────────────────────────────────────────────────────────────
@@ -2995,126 +3358,156 @@ async function fetchRecipeUrl() {
     showRecipeFetchNotice('An API key is needed to fetch recipes. <button onclick="showView(\'settings\')" style="background:none;border:none;color:var(--terracotta);font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;cursor:pointer;padding:0;text-decoration:underline;">Add one in Settings →</button>');
     return;
   }
-  document.getElementById('diagOutput').style.display = 'none';
+
+  showRecipeFetchStatus('Searching for recipe…');
   document.getElementById('diagOutput').textContent = '';
+  document.getElementById('diagOutput').style.display = 'none';
 
-  // Try multiple CORS proxies in order
-  const proxies = [
-    (u) => 'https://corsproxy.io/?' + encodeURIComponent(u),
-    (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
-    (u) => 'https://thingproxy.freeboard.io/fetch/' + u,
-  ];
+  // Pull recipe name from URL slug
+  const slugMatch = url.match(/recipes\/[\d-]*([a-z][a-z0-9-]+)/i);
+  const recipeName = slugMatch ? slugMatch[1].replace(/-/g, ' ') : '';
 
-  let pageText = '';
-  let proxyUsed = '';
-  let diagLog = '';
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{
+          role: 'user',
+          content: (recipeName
+            ? 'Search for and return the complete recipe: "' + recipeName + '" from NYT Cooking. '
+            : 'Search for the recipe at: ' + url + '. ')
+            + 'Include every ingredient with exact quantities and all steps. '
+            + 'Format:\nRecipe: [name]\nServings: [n]\nIngredients:\n[quantity ingredient]\n...\nInstructions:\n[steps]'
+        }]
+      })
+    });
 
-  for (const proxyFn of proxies) {
-    try {
-      const proxyUrl = proxyFn(url);
-      proxyUsed = proxyUrl.split('?')[0];
-      showRecipeFetchStatus('Fetching via ' + proxyUsed.replace('https://','') + '…');
+    const data = await resp.json();
 
-      const resp = await fetch(proxyUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const html = await resp.text();
+    // Show full response in diag for debugging
+    const allText = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+    document.getElementById('diagOutput').textContent = allText || JSON.stringify(data).slice(0, 500);
 
-      diagLog += 'Proxy: ' + proxyUrl + '\nStatus: ' + resp.status + '\nHTML length: ' + html.length + '\n\n';
+    if (data.error) throw new Error(data.error.message);
+    if (!allText) throw new Error('Empty response from API');
+    if (allText.length < 50) throw new Error('Response too short: ' + allText);
 
-      if (html.length < 500) {
-        diagLog += 'Response too short — skipping\n\n';
-        continue;
-      }
+    // Accept if we got something useful — parseRecipeText handles extraction
+    showRecipeFetchStatus('Parsing recipe…');
+    await parseRecipeText(allText, url);
 
-      // Parse HTML
-      const tmp = document.createElement('div');
-      tmp.innerHTML = html;
-
-      // Check for app-redirect interstitial
-      const bodyText = tmp.innerText || tmp.textContent || '';
-      const isInterstitial = /stay in browser|open in app|use the app|open the app|download the app/i.test(bodyText);
-      if (isInterstitial) {
-        diagLog += 'App-redirect interstitial detected\n\n';
-        continue;
-      }
-
-      // Try JSON-LD structured recipe data first (most reliable)
-      const scripts = tmp.querySelectorAll('script[type="application/ld+json"]');
-      for (const s of scripts) {
-        try {
-          const ld = JSON.parse(s.textContent);
-          const recipe = ld['@type'] === 'Recipe' ? ld
-            : Array.isArray(ld['@graph']) ? ld['@graph'].find(x => x['@type'] === 'Recipe')
-            : null;
-          if (recipe) {
-            diagLog += 'Found JSON-LD recipe: ' + (recipe.name || 'unnamed') + '\n';
-            document.getElementById('diagOutput').textContent = diagLog;
-            // Build structured data from JSON-LD
-            const ingredients = (recipe.recipeIngredient || []).map(ing => ({
-              name: ing.replace(/^\d[\d\s\/\.\-]*(?:cup|cups|tbsp|tsp|tablespoon|teaspoon|oz|ounce|pound|lb|g|gram|ml|liter|l|pinch|dash|clove|cloves|slice|slices|can|cans|package|pkg|bunch|head|heads|large|medium|small|whole|piece|pieces)s?\s+/i, '').trim(),
-              quantity: ing.match(/^[\d\s\/\.\-]+(?:cup|cups|tbsp|tsp|tablespoon|teaspoon|oz|ounce|pound|lb|g|gram|ml|liter|l|pinch|dash|clove|cloves|slice|slices|can|cans|package|pkg|bunch|head|heads|large|medium|small|whole|piece|pieces)s?/i)?.[0]?.trim() || '',
-              category: 'Pantry & Dry Goods'
-            }));
-            const fullText = Array.isArray(recipe.recipeInstructions)
-              ? recipe.recipeInstructions.map(s => typeof s === 'string' ? s : s.text || '').join('\n\n')
-              : recipe.recipeInstructions || '';
-            // Let Claude categorize ingredients since JSON-LD doesn't have that
-            showRecipeFetchStatus('Parsing ingredients…');
-            await parseRecipeText(
-              'Recipe: ' + (recipe.name || '') + '\n\nIngredients:\n' + (recipe.recipeIngredient || []).join('\n') + '\n\nInstructions:\n' + fullText,
-              url
-            );
-            hideRecipeFetchStatus();
-            return;
-          }
-        } catch(e) {}
-      }
-
-      // Fall back to extracting visible text
-      tmp.querySelectorAll('script,style,nav,footer,header,aside,[class*="nav"],[class*="menu"],[class*="ad-"]').forEach(el => el.remove());
-      pageText = (tmp.innerText || tmp.textContent || '').replace(/\s{3,}/g, '\n\n').trim().slice(0, 8000);
-      diagLog += 'Extracted text length: ' + pageText.length + '\nFirst 200 chars: ' + pageText.slice(0, 200) + '\n\n';
-
-      if (pageText.length > 200) break; // got usable content
-
-    } catch(e) {
-      diagLog += 'Proxy error: ' + e.message + '\n\n';
-    }
-  }
-
-  document.getElementById('diagOutput').textContent = diagLog + (pageText ? 'Page text:\n' + pageText.slice(0, 500) : 'No page text extracted');
-
-  if (!pageText || pageText.length < 150) {
+  } catch(err) {
     hideRecipeFetchStatus();
+    // Show the error AND the diag output so we can debug
+    document.getElementById('diagOutput').style.display = 'block';
+    showToast('Error: ' + (err.message || 'Unknown').slice(0, 60));
     showFailureAndClearUrl(url);
-    return;
   }
-
-  showRecipeFetchStatus('Parsing ingredients…');
-  await parseRecipeText(pageText, url);
 }
 
 function showFailureAndClearUrl(attemptedUrl) {
-  // Clear the URL field so user knows this attempt failed
   document.getElementById('recipeUrlInput').value = '';
-  // Show the helper
   document.getElementById('paywallHelper').style.display = 'block';
   document.getElementById('recipeTextInput').style.borderColor = 'var(--terracotta)';
   document.getElementById('recipeTextInput').placeholder = 'Paste the recipe text here — just the ingredients list is enough.';
+  // Scroll to show the gold name-lookup box (just below the URL field)
   setTimeout(() => {
-    document.getElementById('paywallHelper').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 100);
+    const goldBox = document.getElementById('recipeNameLookupInput');
+    if (goldBox) {
+      goldBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      goldBox.focus();
+    }
+  }, 150);
 }
 
 // Diagnostic toggle
-document.getElementById('diagToggleBtn').addEventListener('click', () => {
-  const el = document.getElementById('diagOutput');
-  if (el.style.display === 'none') {
-    el.textContent = el.textContent || 'Fetch a URL first to see what Claude saw.';
-    el.style.display = 'block';
-  } else {
-    el.style.display = 'none';
+// ── Recipe name lookup (NYT and other well-known recipes) ─────────────────────
+
+document.getElementById('recipeNameLookupBtn').addEventListener('click', () => lookupRecipeByName());
+document.getElementById('recipeNameLookupInput').addEventListener('keydown', e => { if (e.key === 'Enter') lookupRecipeByName(); });
+
+async function lookupRecipeByName() {
+  const name = document.getElementById('recipeNameLookupInput').value.trim();
+  if (!name) { showToast('Enter a recipe name'); return; }
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    showRecipeFetchNotice('An API key is needed. <button onclick="showView(\'settings\')" style="background:none;border:none;color:var(--terracotta);font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;cursor:pointer;padding:0;text-decoration:underline;">Add one in Settings →</button>');
+    return;
   }
-});
+
+  showRecipeFetchStatus('Looking up "' + name + '"…');
+
+  try {
+    // No web_search tool — use Claude's training knowledge directly.
+    // This works well for NYT Cooking recipes since Claude knows many of them.
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: 'Give me the complete recipe for: ' + name + '\n\n'
+            + 'Include the recipe name, number of servings, every ingredient with exact quantity, and all preparation steps.\n\n'
+            + 'Recipe: [name]\n'
+            + 'Servings: [n]\n'
+            + 'Ingredients:\n'
+            + '[quantity ingredient, one per line]\n\n'
+            + 'Instructions:\n'
+            + '[numbered steps]'
+        }]
+      })
+    });
+
+    const data = await resp.json();
+
+    if (data.error) {
+      throw new Error(data.error.type + ': ' + data.error.message);
+    }
+
+    if (!data.content || !data.content.length) {
+      throw new Error('Empty response — raw: ' + JSON.stringify(data).slice(0, 200));
+    }
+
+    const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
+
+    if (!text || text.length < 50) {
+      throw new Error('No text in response. Content: ' + JSON.stringify(data.content).slice(0, 200));
+    }
+
+    showRecipeFetchStatus('Parsing…');
+    await parseRecipeText(text, '');
+
+    setTimeout(() => {
+      const nameField = document.getElementById('parsedRecipeName');
+      if (nameField && !nameField.value) nameField.value = name;
+    }, 200);
+
+  } catch(err) {
+    hideRecipeFetchStatus();
+    // Show full error in the diag output so it's readable
+    const diag = document.getElementById('diagOutput');
+    diag.textContent = 'Lookup error:\n' + (err.message || 'Unknown');
+    diag.style.display = 'block';
+    showToast('Error — see details above URL field');
+  }
+}
 
 // ── Text paste parse ───────────────────────────────────────────────────────────
 
@@ -3161,6 +3554,16 @@ document.getElementById('recipeTextInput').addEventListener('focus', () => {
 async function parseRecipeText(text, sourceUrl) {
   const apiKey = getApiKey();
   try {
+    const schema = '{\n'
+      + '  "name": "recipe name",\n'
+      + '  "servings": 4,\n'
+      + '  "ingredients": [{"name":"ingredient","quantity":"amount + unit","category":"Produce|Dairy & Eggs|Meat & Seafood|Bakery & Bread|Pantry & Dry Goods|Canned & Jarred|Frozen|Beverages|Spices & Condiments|Household & Other"}],\n'
+      + '  "fullText": "complete recipe instructions as plain text"\n'
+      + '}';
+
+    const prompt = 'Parse this recipe and return ONLY a JSON object (no markdown):\n'
+      + schema + '\n\nRecipe text:\n' + text.slice(0, 5000);
+
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -3170,21 +3573,9 @@ async function parseRecipeText(text, sourceUrl) {
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 2000,
-        messages: [{
-          role: 'user',
-          content: `Parse this recipe and return ONLY a JSON object (no markdown):
-{
-  "name": "recipe name",
-  "servings": <number, default 4 if unclear>,
-  "ingredients": [{"name":"...","quantity":"amount + unit","category":"Produce|Dairy & Eggs|Meat & Seafood|Bakery & Bread|Pantry & Dry Goods|Canned & Jarred|Frozen|Beverages|Spices & Condiments|Household & Other"}],
-  "fullText": "the complete recipe instructions as plain text, preserving all steps"
-}
-
-Recipe text:
-${text.slice(0, 5000)}`
-        }]
+        messages: [{ role: 'user', content: prompt }]
       })
     });
     const data = await resp.json();
@@ -3631,7 +4022,7 @@ async function runSubAnalysis() {
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1200,
         system: [{ type: 'text', text: 'You are an expert culinary nutritionist and pastry chef advising a home cook who loves to bake. She wants to reduce fat, sugar, and increase fiber in recipes while maintaining great results. Be specific, practical, and honest about tradeoffs. Write in clear plain prose — no markdown symbols, no asterisks, no bullet dashes. Use numbered lists where helpful.' }],
         messages: [{ role: 'user', content: userMsg }]
@@ -3763,7 +4154,7 @@ async function sendSubChat() {
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 800,
         system: [{ type: 'text', text: 'You are an expert culinary nutritionist and pastry chef. The user is asking follow-up questions about substituting ' + subContext.ingredient + (subContext.recipe ? ' in ' + subContext.recipe : '') + '. Be concise, practical, and specific. Plain text only — no markdown, no bullet symbols, use natural prose.' }],
         messages: subChatHistory
@@ -4148,6 +4539,212 @@ function renderSubLibrary() {
   });
 }
 
+// ── Library sub-tab switching ─────────────────────────────────────────────────
+
+document.querySelectorAll('[data-ltab]').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('[data-ltab]').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const which = tab.dataset.ltab;
+    document.getElementById('libSubsPanel').style.display  = which === 'subs'  ? 'block' : 'none';
+    document.getElementById('libPicksPanel').style.display = which === 'picks' ? 'block' : 'none';
+    currentLibTab = which;
+  });
+});
+
+let currentLibTab = 'subs';
+
+document.getElementById('libAddNewBtn').addEventListener('click', () => {
+  openManualLibEntryModal(currentLibTab);
+});
+
+// ── Product Picks Library storage ─────────────────────────────────────────────
+
+function loadProductPicks() {
+  try { return JSON.parse(localStorage.getItem('kc_product_picks_v1') || '[]'); } catch(e) { return []; }
+}
+function saveProductPicks(picks) {
+  try { localStorage.setItem('kc_product_picks_v1', JSON.stringify(picks)); } catch(e) {}
+}
+
+// Save product pick from an advisor result
+function saveProductPick(ingredient, query, adviceText, source) {
+  // 'source' = 'photo' | 'brand' | 'manual'
+  const picks = loadProductPicks();
+  const entry = {
+    id: Date.now(),
+    ingredient,
+    query: query || '',
+    adviceText: adviceText || '',
+    source,
+    rating: null,
+    notes: '',
+    url: '',
+    savedAt: Date.now()
+  };
+  picks.unshift(entry);
+  saveProductPicks(picks);
+}
+
+// Add Save button to brand opt results
+function showProductPickSaveButton(ingredient, query, adviceText, source) {
+  const btn = document.createElement('div');
+  btn.style.cssText = 'text-align:center;margin-top:14px;';
+  btn.innerHTML = '<button style="background:var(--gold-light);border:1px solid var(--gold);border-radius:10px;padding:10px 20px;font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;color:var(--gold-dark);cursor:pointer;width:100%;">⭐ Save to Product Picks</button>';
+  btn.querySelector('button').addEventListener('click', () => {
+    saveProductPick(ingredient, query, adviceText, source);
+    btn.innerHTML = '<p style="font-size:13px;color:var(--sage-dark);text-align:center;padding:8px 0;">✓ Saved to Library → Product Picks</p>';
+    showToast('Saved to Product Picks ✓');
+  });
+  return btn;
+}
+
+// ── Manual library entry modal ─────────────────────────────────────────────────
+
+function openManualLibEntryModal(type) {
+  const isSub = type === 'subs';
+  document.getElementById('manualLibTitle').textContent = isSub ? 'Add substitution' : 'Add product pick';
+  document.getElementById('manualLibIngLabel').textContent = isSub ? 'Ingredient' : 'Ingredient / category';
+  document.getElementById('manualLibSubLabel').textContent = isSub ? 'Substitution used' : 'Product / brand chosen';
+  document.getElementById('manualLibSubInput').placeholder = isSub ? 'e.g. Allulose instead of sugar' : 'e.g. Kerrygold butter';
+  document.getElementById('manualLibType').value = type;
+  document.getElementById('manualLibIngInput').value = '';
+  document.getElementById('manualLibSubInput').value = '';
+  document.getElementById('manualLibAdviceInput').value = '';
+  document.getElementById('manualLibUrlInput').value = '';
+  document.getElementById('manualLibNotesInput').value = '';
+  document.getElementById('manualLibModal').classList.add('open');
+  setTimeout(() => document.getElementById('manualLibIngInput').focus(), 300);
+}
+
+document.getElementById('manualLibModal')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('manualLibModal')) document.getElementById('manualLibModal').classList.remove('open');
+});
+
+document.getElementById('manualLibSaveBtn')?.addEventListener('click', () => {
+  const type = document.getElementById('manualLibType').value;
+  const ingredient = document.getElementById('manualLibIngInput').value.trim();
+  const sub = document.getElementById('manualLibSubInput').value.trim();
+  const advice = document.getElementById('manualLibAdviceInput').value.trim();
+  const url = document.getElementById('manualLibUrlInput').value.trim();
+  const notes = document.getElementById('manualLibNotesInput').value.trim();
+
+  if (!ingredient) { showToast('Enter an ingredient name'); return; }
+
+  if (type === 'subs') {
+    const subs = loadSubLibrary();
+    subs.unshift({ id: Date.now(), ingredient, ideaUsed: sub, adviceText: advice, notes, rating: null, recipe: '', quantity: '', savedAt: Date.now() });
+    saveSubLibrary(subs);
+    renderSubLibrary();
+    showToast('Substitution saved ✓');
+  } else {
+    const picks = loadProductPicks();
+    picks.unshift({ id: Date.now(), ingredient, query: sub, adviceText: advice, url, notes, source: 'manual', rating: null, savedAt: Date.now() });
+    saveProductPicks(picks);
+    renderProductPicksLibrary();
+    showToast('Product pick saved ✓');
+  }
+  document.getElementById('manualLibModal').classList.remove('open');
+});
+
+// ── Render Product Picks Library ──────────────────────────────────────────────
+
+function renderProductPicksLibrary() {
+  const picks = loadProductPicks();
+  const container = document.getElementById('libPicksList');
+  if (!container) return;
+
+  if (!picks.length) {
+    container.innerHTML = '<div class="empty-state" style="padding-top:40px;"><div class="empty-icon">⭐</div><p>No product picks yet</p><p class="empty-hint">Use "Find best option" on any ingredient,<br>then tap Save to Product Picks.<br>Or tap "+ Add entry" above.</p></div>';
+    return;
+  }
+
+  const ratingLabel = { great: '⭐ Great', partial: '~ OK', nope: '✕ Skip' };
+  const ratingClass = { great: 'rating-great', partial: 'rating-partial', nope: 'rating-nope' };
+  const sourceLabel = { photo: '📷 Photo scan', brand: '🔤 Brand search', manual: '✏️ Manual' };
+
+  // Group by ingredient
+  const groups = {};
+  picks.forEach(p => {
+    const key = p.ingredient.toLowerCase();
+    if (!groups[key]) groups[key] = { label: p.ingredient, items: [] };
+    groups[key].items.push(p);
+  });
+
+  container.innerHTML = Object.values(groups).map(group => {
+    const cards = group.items.map(p => {
+      const rClass = p.rating ? ratingClass[p.rating] : '';
+      // Make URL a clickable link if present
+      const urlHtml = p.url
+        ? '<a href="' + escHtml(p.url.startsWith('http') ? p.url : 'https://' + p.url) + '" target="_blank" rel="noopener" style="font-size:12px;color:var(--terracotta);display:block;margin-bottom:6px;word-break:break-all;">' + escHtml(p.url) + '</a>'
+        : '';
+
+      return '<div class="sub-lib-card ' + rClass + '" style="border-left-color:var(--gold);" data-pid="' + p.id + '">'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:3px;">'
+        + '<p class="sub-lib-sub-name">' + escHtml(p.query || 'Product recommendation') + '</p>'
+        + '<span style="font-size:10px;color:var(--ink-ghost);white-space:nowrap;flex-shrink:0;">' + escHtml(sourceLabel[p.source] || '') + '</span>'
+        + '</div>'
+        + '<p class="sub-lib-meta">' + timeAgo(p.savedAt) + '</p>'
+        + urlHtml
+        + (p.adviceText ? '<p class="sub-lib-advice">' + escHtml(p.adviceText.slice(0, 220)) + (p.adviceText.length > 220 ? '…' : '') + '</p>' : '')
+        + (p.notes ? '<div class="sub-lib-notes">' + escHtml(p.notes) + '</div>' : '')
+        + '<div class="sub-lib-actions">'
+        + '<button class="sub-lib-rating-btn ' + (p.rating === 'great' ? 'active-great' : '') + '" data-pid="' + p.id + '" data-rating="great">⭐ Great</button>'
+        + '<button class="sub-lib-rating-btn ' + (p.rating === 'partial' ? 'active-partial' : '') + '" data-pid="' + p.id + '" data-rating="partial">~ OK</button>'
+        + '<button class="sub-lib-rating-btn ' + (p.rating === 'nope' ? 'active-nope' : '') + '" data-pid="' + p.id + '" data-rating="nope">✕ Skip</button>'
+        + '<button class="sub-lib-delete-btn pick-delete" data-pid="' + p.id + '">Delete</button>'
+        + '</div>'
+        + '<div style="margin-top:8px;">'
+        + '<textarea data-pid="' + p.id + '" class="pick-note-area" rows="2" placeholder="Add a note…" style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--parchment);background:var(--cream);font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--ink);outline:none;resize:none;line-height:1.5;">' + escHtml(p.notes || '') + '</textarea>'
+        + '<button class="pick-note-save" data-pid="' + p.id + '" style="margin-top:4px;background:none;border:none;font-size:12px;color:var(--terracotta);cursor:pointer;font-weight:500;padding:0;">Save note</button>'
+        + '</div></div>';
+    }).join('');
+
+    return '<div style="margin-bottom:20px;"><p class="sub-lib-group-label">⭐ ' + escHtml(group.label) + '</p>' + cards + '</div>';
+  }).join('');
+
+  // Rating buttons
+  container.querySelectorAll('.sub-lib-rating-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pid = parseInt(btn.dataset.pid);
+      const rating = btn.dataset.rating;
+      const picks = loadProductPicks();
+      const idx = picks.findIndex(p => p.id === pid);
+      if (idx < 0) return;
+      picks[idx].rating = picks[idx].rating === rating ? null : rating;
+      saveProductPicks(picks);
+      renderProductPicksLibrary();
+    });
+  });
+
+  // Save note
+  container.querySelectorAll('.pick-note-save').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pid = parseInt(btn.dataset.pid);
+      const area = container.querySelector('.pick-note-area[data-pid="' + pid + '"]');
+      const picks = loadProductPicks();
+      const idx = picks.findIndex(p => p.id === pid);
+      if (idx < 0 || !area) return;
+      picks[idx].notes = area.value.trim();
+      saveProductPicks(picks);
+      renderProductPicksLibrary();
+      showToast('Note saved ✓');
+    });
+  });
+
+  // Delete
+  container.querySelectorAll('.pick-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pid = parseInt(btn.dataset.pid);
+      if (!confirm('Delete this product pick?')) return;
+      const picks = loadProductPicks().filter(p => p.id !== pid);
+      saveProductPicks(picks);
+      renderProductPicksLibrary();
+      showToast('Deleted');
+    });
+  });
+}
+
 // ── Reset helpers for comparison flows ───────────────────────────────────────
 
 function resetBrandOpt() {
@@ -4170,6 +4767,407 @@ function resetBestOpt() {
   bestOptPickBtn.style.display = 'flex';
   bestOptAnalyzeBtn.style.display = 'none';
   document.getElementById('bestOptSheet').scrollTop = 0;
+}
+
+// ── Hamburger drawer ──────────────────────────────────────────────────────────
+
+function openDrawer() {
+  document.getElementById('sideDrawer').style.transform = 'translateX(0)';
+  document.getElementById('drawerOverlay').style.opacity = '1';
+  document.getElementById('drawerOverlay').style.pointerEvents = 'all';
+}
+function closeDrawer() {
+  document.getElementById('sideDrawer').style.transform = 'translateX(100%)';
+  document.getElementById('drawerOverlay').style.opacity = '0';
+  document.getElementById('drawerOverlay').style.pointerEvents = 'none';
+}
+document.getElementById('hamburgerBtn').addEventListener('click', openDrawer);
+document.getElementById('drawerCloseBtn').addEventListener('click', closeDrawer);
+document.getElementById('drawerOverlay').addEventListener('click', closeDrawer);
+
+// ── Menu Planning ─────────────────────────────────────────────────────────────
+
+function loadMenus() {
+  try { return JSON.parse(localStorage.getItem('kc_menus_v1') || '[]'); } catch(e) { return []; }
+}
+function saveMenus(menus) {
+  try { localStorage.setItem('kc_menus_v1', JSON.stringify(menus)); } catch(e) {}
+}
+
+let activeMenu = null; // menu being created/edited
+
+// Sub-tab switching
+document.querySelectorAll('[data-mtab]').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('[data-mtab]').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const which = tab.dataset.mtab;
+    document.getElementById('menusSavedPanel').style.display  = which === 'saved'  ? 'block' : 'none';
+    document.getElementById('menusCreatePanel').style.display = which === 'create' ? 'block' : 'none';
+    if (which === 'saved') renderSavedMenus();
+  });
+});
+
+document.getElementById('newMenuBtn').addEventListener('click', () => {
+  startNewMenu();
+});
+
+function startNewMenu(existingMenu) {
+  activeMenu = existingMenu || {
+    id: Date.now(),
+    name: '', date: '', guests: '', description: '',
+    recipes: [], extraItems: [], tasks: [],
+    createdAt: Date.now()
+  };
+  // Switch to create tab
+  document.querySelectorAll('[data-mtab]').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-mtab="create"]').classList.add('active');
+  document.getElementById('menusSavedPanel').style.display  = 'none';
+  document.getElementById('menusCreatePanel').style.display = 'block';
+  renderMenuCreateForm();
+}
+
+function renderMenuCreateForm() {
+  const panel = document.getElementById('menusCreatePanel');
+  const m = activeMenu;
+  const allRecipes = loadRecipes();
+
+  // Recipe checkboxes
+  const recipeCheckboxes = allRecipes.length
+    ? allRecipes.map(r => {
+        const checked = m.recipes.some(mr => mr.id === r.id);
+        return '<label style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--parchment);cursor:pointer;">'
+          + '<input type="checkbox" class="menu-recipe-cb" data-rid="' + r.id + '" ' + (checked ? 'checked' : '') + ' style="margin-top:2px;accent-color:var(--terracotta);flex-shrink:0;">'
+          + '<div><p style="font-size:14px;color:var(--ink);">' + escHtml(r.name) + '</p>'
+          + '<p style="font-size:12px;color:var(--ink-muted);">' + (r.ingredients?.length || 0) + ' ingredients · ' + (r.targetServings || r.origServings || '?') + ' servings</p></div>'
+          + '</label>';
+      }).join('')
+    : '<p style="font-size:13px;color:var(--ink-ghost);padding:10px 0;">No saved recipes yet — import some in the Recipes tab first.</p>';
+
+  // Extra items list
+  const extraItemsHtml = m.extraItems.map((item, i) =>
+    '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--parchment);">'
+    + '<span style="flex:1;font-size:14px;color:var(--ink);">' + escHtml(item) + '</span>'
+    + '<button onclick="removeMenuExtraItem(' + i + ')" style="background:none;border:none;color:var(--ink-ghost);cursor:pointer;font-size:16px;">✕</button>'
+    + '</div>'
+  ).join('');
+
+  // Tasks list
+  const tasksHtml = m.tasks.length
+    ? m.tasks.map((t, i) =>
+        '<div class="timeline-task">'
+        + '<input type="text" class="task-time" value="' + escHtml(t.time || '') + '" placeholder="Time" data-tidx="' + i + '">'
+        + '<textarea class="task-text" rows="2" data-tidx="' + i + '">' + escHtml(t.text || '') + '</textarea>'
+        + '<button class="task-delete" data-tidx="' + i + '">✕</button>'
+        + '</div>'
+      ).join('')
+    : '';
+
+  panel.innerHTML = '<div style="padding-top:4px;">'
+
+    // ── Details ──
+    + '<p style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--parchment);">📋 Event details</p>'
+    + '<label class="menu-field-label">Menu name</label>'
+    + '<input class="menu-input" id="mName" value="' + escHtml(m.name) + '" placeholder="e.g. Thanksgiving Dinner, Elissa\'s Birthday Party">'
+    + '<div style="display:flex;gap:10px;">'
+    + '<div style="flex:1;"><label class="menu-field-label">Date</label><input class="menu-input" id="mDate" type="date" value="' + escHtml(m.date) + '"></div>'
+    + '<div style="width:90px;"><label class="menu-field-label">Guests</label><input class="menu-input" id="mGuests" type="number" min="1" value="' + escHtml(m.guests) + '" placeholder="4" style="text-align:center;"></div>'
+    + '</div>'
+    + '<label class="menu-field-label">Description / notes</label>'
+    + '<textarea class="menu-textarea" id="mDesc" rows="2" placeholder="e.g. Italian theme, vegetarian, outdoor dining…">' + escHtml(m.description) + '</textarea>'
+
+    // ── Recipes ──
+    + '<p style="font-size:13px;font-weight:600;color:var(--ink);margin:4px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--parchment);">📖 Recipes <span style="font-weight:400;color:var(--ink-muted);">(up to 10)</span></p>'
+    + recipeCheckboxes
+
+    // ── Extra food items ──
+    + '<p style="font-size:13px;font-weight:600;color:var(--ink);margin:16px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--parchment);">🥗 Other food items</p>'
+    + '<p style="font-size:12px;color:var(--ink-muted);margin-bottom:8px;">Things you\'re serving that don\'t have a recipe (veggie platter, bread, drinks, etc.)</p>'
+    + extraItemsHtml
+    + '<div style="display:flex;gap:8px;margin-top:8px;">'
+    + '<input id="menuExtraInput" class="menu-input" placeholder="e.g. Veggie platter with dip" style="margin-bottom:0;flex:1;">'
+    + '<button onclick="addMenuExtraItem()" style="height:42px;padding:0 14px;border-radius:10px;border:none;background:var(--terracotta);color:white;font-family:\'DM Sans\',sans-serif;font-size:14px;cursor:pointer;">Add</button>'
+    + '</div>'
+
+    // ── Add to shopping list ──
+    + '<p style="font-size:13px;font-weight:600;color:var(--ink);margin:16px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--parchment);">🛒 Shopping list</p>'
+    + '<button onclick="addMenuToShoppingList()" style="width:100%;height:44px;border-radius:10px;border:1.5px solid var(--terracotta);background:transparent;color:var(--terracotta);font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:8px;">Add all recipe ingredients to list</button>'
+    + '<div style="display:flex;gap:8px;margin-bottom:4px;">'
+    + '<input id="menuShopItem" class="menu-input" placeholder="Add an item not in any recipe…" style="margin-bottom:0;flex:1;">'
+    + '<button onclick="addMenuShopItem()" style="height:42px;padding:0 14px;border-radius:10px;border:none;background:var(--ink);color:white;font-family:\'DM Sans\',sans-serif;font-size:14px;cursor:pointer;">Add</button>'
+    + '</div>'
+
+    // ── Prep timeline ──
+    + '<p style="font-size:13px;font-weight:600;color:var(--ink);margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--parchment);">⏰ Prep timeline</p>'
+    + '<p style="font-size:12px;color:var(--ink-muted);margin-bottom:10px;">Set your event time and Claude will generate a prep schedule. You can edit every task.</p>'
+    + '<div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;">'
+    + '<div style="flex:1;"><label class="menu-field-label">Event / serve time</label>'
+    + '<input id="mEventTime" class="menu-input" type="time" value="' + escHtml(m.eventTime || '') + '" style="margin-bottom:0;"></div>'
+    + '<button id="genTimelineBtn" style="height:42px;padding:0 14px;border-radius:10px;border:none;background:var(--sage-dark);color:white;font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;">Generate</button>'
+    + '</div>'
+    + '<div id="menuTimelineStatus" style="display:none;text-align:center;padding:16px 0;">'
+    + '<div style="width:24px;height:24px;border:3px solid var(--parchment);border-top-color:var(--sage);border-radius:50%;margin:0 auto 8px;animation:spin 0.8s linear infinite;"></div>'
+    + '<p style="font-size:13px;color:var(--ink-muted);">Generating prep schedule…</p>'
+    + '</div>'
+    + '<div id="menuTaskList">' + (tasksHtml || '<p style="font-size:13px;color:var(--ink-ghost);padding:8px 0;">No tasks yet — generate a schedule or add tasks manually.</p>') + '</div>'
+    + '<button onclick="addMenuTask()" style="margin-top:8px;background:none;border:1px dashed var(--ink-ghost);border-radius:8px;width:100%;height:36px;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--ink-muted);cursor:pointer;">+ Add task manually</button>'
+
+    // ── Save ──
+    + '<div style="display:flex;gap:8px;margin-top:20px;">'
+    + '<button onclick="saveActiveMenu()" style="flex:1;height:48px;border-radius:12px;border:none;background:var(--terracotta);color:white;font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:500;cursor:pointer;">Save menu</button>'
+    + '<button onclick="deleteActiveMenu()" style="height:48px;padding:0 16px;border-radius:12px;border:0.5px solid var(--parchment);background:var(--warm-white);color:var(--ink-muted);font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">Delete</button>'
+    + '</div>'
+    + '</div>';
+
+  // Wire recipe checkboxes
+  panel.querySelectorAll('.menu-recipe-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const rid = parseInt(cb.dataset.rid);
+      const recipe = loadRecipes().find(r => r.id === rid);
+      if (!recipe) return;
+      if (cb.checked) {
+        if (activeMenu.recipes.length >= 10) { cb.checked = false; showToast('Maximum 10 recipes per menu'); return; }
+        if (!activeMenu.recipes.find(r => r.id === rid)) activeMenu.recipes.push({ id: rid, name: recipe.name });
+      } else {
+        activeMenu.recipes = activeMenu.recipes.filter(r => r.id !== rid);
+      }
+    });
+  });
+
+  // Wire task events
+  panel.querySelectorAll('.task-time').forEach(input => {
+    input.addEventListener('blur', () => {
+      const idx = parseInt(input.dataset.tidx);
+      if (activeMenu.tasks[idx]) activeMenu.tasks[idx].time = input.value;
+    });
+  });
+  panel.querySelectorAll('.task-text').forEach(ta => {
+    ta.addEventListener('blur', () => {
+      const idx = parseInt(ta.dataset.tidx);
+      if (activeMenu.tasks[idx]) activeMenu.tasks[idx].text = ta.value;
+    });
+  });
+  panel.querySelectorAll('.task-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.tidx);
+      activeMenu.tasks.splice(idx, 1);
+      renderMenuCreateForm();
+    });
+  });
+
+  // Generate timeline button
+  document.getElementById('genTimelineBtn').addEventListener('click', generateTimeline);
+}
+
+function syncMenuFormFields() {
+  activeMenu.name        = document.getElementById('mName')?.value.trim() || activeMenu.name;
+  activeMenu.date        = document.getElementById('mDate')?.value || activeMenu.date;
+  activeMenu.guests      = document.getElementById('mGuests')?.value || activeMenu.guests;
+  activeMenu.description = document.getElementById('mDesc')?.value.trim() || activeMenu.description;
+  activeMenu.eventTime   = document.getElementById('mEventTime')?.value || activeMenu.eventTime;
+}
+
+function addMenuExtraItem() {
+  const input = document.getElementById('menuExtraInput');
+  const val = input.value.trim();
+  if (!val) return;
+  syncMenuFormFields();
+  activeMenu.extraItems.push(val);
+  input.value = '';
+  renderMenuCreateForm();
+}
+
+function removeMenuExtraItem(idx) {
+  syncMenuFormFields();
+  activeMenu.extraItems.splice(idx, 1);
+  renderMenuCreateForm();
+}
+
+function addMenuTask() {
+  syncMenuFormFields();
+  activeMenu.tasks.push({ time: '', text: '' });
+  renderMenuCreateForm();
+  // Focus last task text
+  setTimeout(() => {
+    const tasks = document.querySelectorAll('.task-text');
+    if (tasks.length) tasks[tasks.length - 1].focus();
+  }, 100);
+}
+
+function addMenuToShoppingList() {
+  syncMenuFormFields();
+  const allRecipes = loadRecipes();
+  let added = 0;
+  activeMenu.recipes.forEach(mr => {
+    const recipe = allRecipes.find(r => r.id === mr.id);
+    if (!recipe) return;
+    recipe.ingredients.forEach(ing => {
+      addItem(ing.name, { quantity: ing.quantity, category: ing.category, recipes: [recipe.name] });
+      added++;
+    });
+  });
+  showToast('Added ' + added + ' ingredients to shopping list ✓');
+}
+
+function addMenuShopItem() {
+  const input = document.getElementById('menuShopItem');
+  const val = input.value.trim();
+  if (!val) return;
+  syncMenuFormFields();
+  addItem(val, { recipes: [activeMenu.name || 'Menu item'] });
+  input.value = '';
+  showToast('Added "' + val + '" to shopping list ✓');
+}
+
+async function generateTimeline() {
+  syncMenuFormFields();
+  const apiKey = getApiKey();
+  if (!apiKey) { showToast('Add your API key in Settings first'); return; }
+
+  const eventTime = activeMenu.eventTime;
+  if (!eventTime) { showToast('Set an event time first'); document.getElementById('mEventTime').focus(); return; }
+
+  const recipeNames = activeMenu.recipes.map(r => r.name);
+  const extraItems  = activeMenu.extraItems;
+  if (!recipeNames.length && !extraItems.length) { showToast('Add some recipes or food items first'); return; }
+
+  const allRecipes = loadRecipes();
+  const recipeDetails = recipeNames.map(name => {
+    const r = allRecipes.find(r => r.name === name);
+    const cookInfo = r?.fullText ? r.fullText.slice(0, 300) : '';
+    return name + (cookInfo ? ' (instructions: ' + cookInfo + ')' : '');
+  }).join('\n');
+
+  document.getElementById('menuTimelineStatus').style.display = 'block';
+  document.getElementById('menuTaskList').style.display = 'none';
+
+  try {
+    const guestLine = activeMenu.guests ? ' for ' + activeMenu.guests + ' guests' : '';
+    const prompt = 'I am preparing a meal' + guestLine + ' with service at ' + eventTime + '.\n\n'
+      + 'Recipes:\n' + recipeDetails + '\n\n'
+      + (extraItems.length ? 'Also serving: ' + extraItems.join(', ') + '\n\n' : '')
+      + 'Create a detailed prep timeline working backwards from ' + eventTime + '. '
+      + 'For each task give a start time and a specific action. Order from earliest to latest. '
+      + 'Include prep, cook times, resting times, and plating. '
+      + 'Format each line as: HH:MM | Task description. One task per line. No other text.';
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 800,
+        system: [{ type: 'text', text: 'You are an expert chef creating a precise prep timeline. Output ONLY lines in the format "HH:MM | Task". No headers, no bullets, no extra text.' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
+
+    // Parse HH:MM | Task lines
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+    activeMenu.tasks = lines.map(line => {
+      const parts = line.split('|');
+      return { time: (parts[0] || '').trim(), text: (parts.slice(1).join('|') || '').trim() };
+    }).filter(t => t.text);
+
+    document.getElementById('menuTimelineStatus').style.display = 'none';
+    document.getElementById('menuTaskList').style.display = 'block';
+    renderMenuCreateForm();
+
+  } catch(err) {
+    document.getElementById('menuTimelineStatus').style.display = 'none';
+    document.getElementById('menuTaskList').style.display = 'block';
+    showToast('Timeline error: ' + (err.message || 'Try again'));
+  }
+}
+
+function saveActiveMenu() {
+  syncMenuFormFields();
+  if (!activeMenu.name) { showToast('Give your menu a name first'); document.getElementById('mName')?.focus(); return; }
+  const menus = loadMenus();
+  const idx = menus.findIndex(m => m.id === activeMenu.id);
+  activeMenu.updatedAt = Date.now();
+  if (idx >= 0) menus[idx] = activeMenu;
+  else menus.unshift(activeMenu);
+  saveMenus(menus);
+  showToast('"' + activeMenu.name + '" saved ✓');
+  // Switch to saved tab
+  document.querySelectorAll('[data-mtab]').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-mtab="saved"]').classList.add('active');
+  document.getElementById('menusSavedPanel').style.display  = 'block';
+  document.getElementById('menusCreatePanel').style.display = 'none';
+  renderSavedMenus();
+}
+
+function deleteActiveMenu() {
+  if (!confirm('Delete this menu?')) return;
+  const menus = loadMenus().filter(m => m.id !== activeMenu.id);
+  saveMenus(menus);
+  activeMenu = null;
+  document.querySelectorAll('[data-mtab]').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-mtab="saved"]').classList.add('active');
+  document.getElementById('menusSavedPanel').style.display  = 'block';
+  document.getElementById('menusCreatePanel').style.display = 'none';
+  renderSavedMenus();
+  showToast('Menu deleted');
+}
+
+function renderSavedMenus() {
+  const menus = loadMenus();
+  const container = document.getElementById('menusSavedList');
+  if (!menus.length) {
+    container.innerHTML = '<div class="empty-state" style="padding-top:40px;"><div class="empty-icon">📅</div><p>No saved menus yet</p><p class="empty-hint">Tap "+ New menu" to plan your first event.</p></div>';
+    return;
+  }
+  container.innerHTML = menus.map(m => {
+    const dateStr = m.date ? new Date(m.date + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '';
+    const metaParts = [];
+    if (dateStr) metaParts.push(dateStr);
+    if (m.guests) metaParts.push(m.guests + ' guests');
+    if (m.recipes?.length) metaParts.push(m.recipes.length + ' recipes');
+    return '<div class="menu-card" data-mid="' + m.id + '">'
+      + '<p class="menu-card-name">' + escHtml(m.name) + '</p>'
+      + '<p class="menu-card-meta">' + metaParts.join(' · ') + '</p>'
+      + (m.description ? '<p class="menu-card-desc">' + escHtml(m.description.slice(0, 80)) + (m.description.length > 80 ? '…' : '') + '</p>' : '')
+      + '<div style="display:flex;gap:6px;margin-top:10px;">'
+      + '<button class="menu-edit-btn recipe-card-btn recipe-add-btn" data-mid="' + m.id + '" style="flex:1;width:auto;font-size:12px;padding:0 10px;" title="Edit">Edit / view</button>'
+      + '<button class="menu-list-btn recipe-card-btn" data-mid="' + m.id + '" style="flex:1;width:auto;font-size:12px;padding:0 10px;background:var(--sage-light);color:var(--sage-dark);border-color:var(--sage-light);" title="Add to list">Add to list</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  container.querySelectorAll('.menu-edit-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const mid = parseInt(btn.dataset.mid);
+      const menu = loadMenus().find(m => m.id === mid);
+      if (menu) startNewMenu(menu);
+    });
+  });
+
+  container.querySelectorAll('.menu-list-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const mid = parseInt(btn.dataset.mid);
+      const menu = loadMenus().find(m => m.id === mid);
+      if (!menu) return;
+      const allRecipes = loadRecipes();
+      let added = 0;
+      menu.recipes.forEach(mr => {
+        const recipe = allRecipes.find(r => r.id === mr.id);
+        if (!recipe) return;
+        recipe.ingredients.forEach(ing => {
+          addItem(ing.name, { quantity: ing.quantity, category: ing.category, recipes: [recipe.name] });
+          added++;
+        });
+      });
+      showToast('Added ' + added + ' ingredients for "' + menu.name + '" ✓');
+      showView('list');
+    });
+  });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
