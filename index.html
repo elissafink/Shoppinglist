@@ -4714,7 +4714,9 @@ function renderSubLibrary() {
       return `<div class="sub-lib-card ${rClass}" data-sid="${s.id}">
         <p class="sub-lib-sub-name">${escHtml(s.ideaUsed || 'Claude\'s recommendations')}</p>
         <p class="sub-lib-meta">${escHtml(metaParts.join(' · '))}</p>
-        ${s.adviceText ? `<p class="sub-lib-advice">${escHtml(s.adviceText.slice(0, 220))}${s.adviceText.length > 220 ? '…' : ''}</p>` : ''}
+        ${s.adviceText ? `<p class="sub-lib-advice">${s.adviceText.length > 220
+          ? `<span class="advice-preview-${s.id}">${escHtml(s.adviceText.slice(0, 220))}…</span><span class="advice-full-${s.id}" style="display:none;">${escHtml(s.adviceText)}</span> <button onclick="toggleAdvice(${s.id},'${s.id}')" style="background:none;border:none;color:var(--terracotta);font-size:12px;cursor:pointer;font-weight:500;padding:0;" id="advBtn-${s.id}">Show more</button>`
+          : escHtml(s.adviceText)}</p>` : ''}
         ${s.notes ? `<div class="sub-lib-notes">${escHtml(s.notes)}</div>` : ''}
         <div class="sub-lib-actions">
           <button class="sub-lib-rating-btn ${s.rating === 'great'   ? 'active-great'   : ''}" data-sid="${s.id}" data-rating="great">⭐ Great</button>
@@ -4925,7 +4927,15 @@ function renderProductPicksLibrary() {
         + '</div>'
         + '<p class="sub-lib-meta">' + timeAgo(p.savedAt) + '</p>'
         + urlHtml
-        + (p.adviceText ? '<p class="sub-lib-advice">' + escHtml(p.adviceText.slice(0, 220)) + (p.adviceText.length > 220 ? '…' : '') + '</p>' : '')
+        + (p.adviceText
+          ? '<p class="sub-lib-advice">'
+            + (p.adviceText.length > 220
+              ? '<span class="advice-preview-p' + p.id + '">' + escHtml(p.adviceText.slice(0, 220)) + '…</span>'
+                + '<span class="advice-full-p' + p.id + '" style="display:none;">' + escHtml(p.adviceText) + '</span>'
+                + ' <button onclick="toggleAdvice(\'p' + p.id + '\',\'p' + p.id + '\')" style="background:none;border:none;color:var(--terracotta);font-size:12px;cursor:pointer;font-weight:500;padding:0;" id="advBtn-p' + p.id + '">Show more</button>'
+              : escHtml(p.adviceText))
+            + '</p>'
+          : '')
         + (p.notes ? '<div class="sub-lib-notes">' + escHtml(p.notes) + '</div>' : '')
         + '<div class="sub-lib-actions">'
         + '<button class="sub-lib-rating-btn ' + (p.rating === 'great' ? 'active-great' : '') + '" data-pid="' + p.id + '" data-rating="great">⭐ Great</button>'
@@ -4982,6 +4992,19 @@ function renderProductPicksLibrary() {
       showToast('Deleted');
     });
   });
+}
+
+// ── Toggle advice text expand/collapse ───────────────────────────────────────
+
+function toggleAdvice(previewId, fullId) {
+  const preview = document.querySelector('.advice-preview-' + previewId);
+  const full    = document.querySelector('.advice-full-' + fullId);
+  const btn     = document.getElementById('advBtn-' + previewId);
+  if (!preview || !full || !btn) return;
+  const expanded = full.style.display !== 'none';
+  preview.style.display = expanded ? 'inline' : 'none';
+  full.style.display    = expanded ? 'none'   : 'inline';
+  btn.textContent       = expanded ? 'Show more' : 'Show less';
 }
 
 // ── Reset helpers for comparison flows ───────────────────────────────────────
