@@ -3394,59 +3394,123 @@ async function fetchRecipeUrl() {
     return;
   }
 
-  showRecipeFetchStatus('Searching for recipe…');
+  showRecipeFetchStatus('Fetching recipe…');
   document.getElementById('diagOutput').textContent = '';
   document.getElementById('diagOutput').style.display = 'none';
 
-  // Pull recipe name from URL slug
+  // Strategy: try Jina AI reader first (renders JS, handles paywalls with gift links),
+  // then fall back to direct fetch for open sites, then Claude knowledge search
+  const jinaUrl = 'https://r.jina.ai/' + url;
+
+  let pageText = '';
+  let diagLog = '';
+
+  // Attempt 1: Jina AI reader
+  try {
+    showRecipeFetchStatus('Reading page…');
+    const resp = await fetch(jinaUrl, {
+      headers: {
+        'Accept': 'text/plain',
+        'X-Return-Format': 'text'
+      }
+    });
+    const text = await resp.text();
+    diagLog += 'Jina status: ' + resp.status + '\nLength: ' + text.length + '\n\n';
+    if (text.length > 300 && !/access denied|login|subscribe|paywall/i.test(text.slice(0, 500))) {
+      pageText = text.slice(0, 8000);
+      diagLog += 'Jina succeeded\n';
+    } else {
+      diagLog += 'Jina blocked or too short. First 200: ' + text.slice(0, 200) + '\n\n';
+    }
+  } catch(e) {
+    diagLog += 'Jina error: ' + e.message + '\n\n';
+  }
+
+  // Attempt 2: direct fetch (works for open sites like Serious Eats, Food52 etc)
+  if (!pageText) {
+    try {
+      showRecipeFetchStatus('Trying direct fetch…');
+      const resp = await fetch(url, { headers: { 'Accept': 'text/html' } });
+      const html = await resp.text();
+      diagLog += 'Direct fetch status: ' + resp.status + '\nLength: ' + html.length + '\n\n';
+      if (html.length > 500) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        // Try JSON-LD first
+        const scripts = tmp.querySelectorAll('script[type="application/ld+json"]');
+        for (const s of scripts) {
+          try {
+            const ld = JSON.parse(s.textContent);
+            const recipe = ld['@type'] === 'Recipe' ? ld
+              : Array.isArray(ld['@graph']) ? ld['@graph'].find(x => x['@type'] === 'Recipe') : null;
+            if (recipe) {
+              const ingText = (recipe.recipeIngredient || []).join('\n');
+              const instrText = Array.isArray(recipe.recipeInstructions)
+                ? recipe.recipeInstructions.map(s => typeof s === 'string' ? s : s.text || '').join('\n')
+                : (recipe.recipeInstructions || '');
+              pageText = 'Recipe: ' + (recipe.name || '') + '\nServings: ' + (recipe.recipeYield || 4) + '\nIngredients:\n' + ingText + '\nInstructions:\n' + instrText;
+              diagLog += 'JSON-LD recipe found: ' + (recipe.name || '') + '\n';
+              break;
+            }
+          } catch(e) {}
+        }
+        if (!pageText) {
+          tmp.querySelectorAll('script,style,nav,footer,header,aside').forEach(el => el.remove());
+          const extracted = (tmp.innerText || tmp.textContent || '').replace(/\s{3,}/g, '\n\n').trim().slice(0, 8000);
+          if (extracted.length > 300) { pageText = extracted; diagLog += 'Extracted text: ' + extracted.length + ' chars\n'; }
+        }
+      }
+    } catch(e) {
+      diagLog += 'Direct fetch error: ' + e.message + '\n\n';
+    }
+  }
+
+  document.getElementById('diagOutput').textContent = diagLog;
+
+  if (pageText && pageText.length > 150) {
+    showRecipeFetchStatus('Parsing recipe…');
+    await parseRecipeText(pageText, url);
+    return;
+  }
+
+  // All fetches failed — fall back to Claude knowledge search
+  showRecipeFetchStatus('Searching by recipe name…');
   const slugMatch = url.match(/recipes\/[\d-]*([a-z][a-z0-9-]+)/i);
   const recipeName = slugMatch ? slugMatch[1].replace(/-/g, ' ') : '';
+  diagLog += '\nAll fetches failed. Falling back to Claude name search: "' + recipeName + '"\n';
+  document.getElementById('diagOutput').textContent = diagLog;
+
+  if (!recipeName) {
+    hideRecipeFetchStatus();
+    showFailureAndClearUrl(url);
+    return;
+  }
 
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 2000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{
-          role: 'user',
-          content: (recipeName
-            ? 'Search for and return the complete recipe: "' + recipeName + '" from NYT Cooking. '
-            : 'Search for the recipe at: ' + url + '. ')
-            + 'Include every ingredient with exact quantities and all steps. '
-            + 'Format:\nRecipe: [name]\nServings: [n]\nIngredients:\n[quantity ingredient]\n...\nInstructions:\n[steps]'
-        }]
+        messages: [{ role: 'user', content: 'Give me the COMPLETE recipe for "' + recipeName + '". List EVERY ingredient with exact quantities and all instructions. Format:\nRecipe: [name]\nServings: [n]\nIngredients:\n[quantity ingredient]\n...\nInstructions:\n[steps]' }]
       })
     });
-
     const data = await resp.json();
-
-    // Show full response in diag for debugging
-    const allText = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
-    document.getElementById('diagOutput').textContent = allText || JSON.stringify(data).slice(0, 500);
-
     if (data.error) throw new Error(data.error.message);
-    if (!allText) throw new Error('Empty response from API');
-    if (allText.length < 50) throw new Error('Response too short: ' + allText);
-
-    // Accept if we got something useful — parseRecipeText handles extraction
-    showRecipeFetchStatus('Parsing recipe…');
-    await parseRecipeText(allText, url);
-
-  } catch(err) {
-    hideRecipeFetchStatus();
-    // Show the error AND the diag output so we can debug
-    document.getElementById('diagOutput').style.display = 'block';
-    showToast('Error: ' + (err.message || 'Unknown').slice(0, 60));
-    showFailureAndClearUrl(url);
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+    if (text && text.length > 80 && /ingredient/i.test(text)) {
+      showRecipeFetchStatus('Parsing recipe…');
+      await parseRecipeText(text, url);
+      return;
+    }
+  } catch(e) {
+    diagLog += 'Claude fallback error: ' + e.message;
+    document.getElementById('diagOutput').textContent = diagLog;
   }
+
+  hideRecipeFetchStatus();
+  showFailureAndClearUrl(url);
 }
 
 function showFailureAndClearUrl(attemptedUrl) {
