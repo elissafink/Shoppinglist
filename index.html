@@ -2616,7 +2616,8 @@ document.getElementById('importFileInput').addEventListener('change', () => {
       }
 
       if (d.shoppingList?.length) {
-        const toAdd = d.shoppingList.filter(i => !existingIds.has(i.id));
+        const existingListIds = new Set(state.items.map(i => i.id));
+        const toAdd = d.shoppingList.filter(i => !existingListIds.has(i.id));
         state.items = [...toAdd, ...state.items];
         if (d.nextId && d.nextId > state.nextId) state.nextId = d.nextId;
         saveState();
