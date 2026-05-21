@@ -1094,15 +1094,15 @@ html, body {
     </div>
     <!-- Sub-tabs -->
     <div class="sort-tabs" style="margin-bottom:12px;">
-      <button class="sort-tab active" data-ltab="subs">🔄 Substitutions</button>
-      <button class="sort-tab" data-ltab="picks">⭐ Product Picks</button>
+      <button class="sort-tab" data-ltab="subs">🔄 Substitutions</button>
+      <button class="sort-tab active" data-ltab="picks">⭐ Product Picks</button>
     </div>
   </div>
   <!-- Content panels -->
-  <div id="libSubsPanel" style="flex:1;overflow-y:auto;padding:0 20px 40px;">
+  <div id="libSubsPanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px 40px;">
     <div id="libraryList"></div>
   </div>
-  <div id="libPicksPanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px 40px;">
+  <div id="libPicksPanel" style="flex:1;overflow-y:auto;padding:0 20px 40px;">
     <div id="libPicksList"></div>
   </div>
 </div>
@@ -4693,23 +4693,31 @@ function renderSubLibrary() {
     return;
   }
 
-  // Group by ingredient name
+  // Group by ingredient name, sorted alphabetically
   const groups = {};
   subs.forEach(s => {
     const key = s.ingredient.toLowerCase();
     if (!groups[key]) groups[key] = { label: s.ingredient, items: [] };
     groups[key].items.push(s);
   });
+  const sortedGroups = Object.values(groups).sort((a, b) => a.label.localeCompare(b.label));
 
-  const ratingLabel = { great: '⭐ Worked great', partial: '~ Worked partially', nope: '✕ Didn\'t work' };
   const ratingClass = { great: 'rating-great', partial: 'rating-partial', nope: 'rating-nope' };
 
-  container.innerHTML = Object.values(groups).map(group => {
+  container.innerHTML = sortedGroups.map(group => {
     const cards = group.items.map(s => {
       const rClass = s.rating ? ratingClass[s.rating] : '';
       const metaParts = [];
       if (s.recipe) metaParts.push(s.recipe);
       metaParts.push(timeAgo(s.savedAt));
+
+      // Notes with show more/less
+      const NOTE_LIMIT = 120;
+      const notesHtml = s.notes
+        ? (s.notes.length > NOTE_LIMIT
+          ? '<div class="sub-lib-notes"><span class="note-preview-' + s.id + '">' + escHtml(s.notes.slice(0, NOTE_LIMIT)) + '…</span><span class="note-full-' + s.id + '" style="display:none;">' + escHtml(s.notes) + '</span> <button onclick="toggleNote(\'s' + s.id + '\')" id="noteBtn-s' + s.id + '" style="background:none;border:none;color:var(--terracotta);font-size:12px;cursor:pointer;font-weight:500;padding:0;">Show more</button></div>'
+          : '<div class="sub-lib-notes">' + escHtml(s.notes) + '</div>')
+        : '';
 
       return `<div class="sub-lib-card ${rClass}" data-sid="${s.id}">
         <p class="sub-lib-sub-name">${escHtml(s.ideaUsed || 'Claude\'s recommendations')}</p>
@@ -4717,7 +4725,7 @@ function renderSubLibrary() {
         ${s.adviceText ? `<p class="sub-lib-advice">${s.adviceText.length > 220
           ? `<span class="advice-preview-${s.id}">${escHtml(s.adviceText.slice(0, 220))}…</span><span class="advice-full-${s.id}" style="display:none;">${escHtml(s.adviceText)}</span> <button onclick="toggleAdvice(${s.id},'${s.id}')" style="background:none;border:none;color:var(--terracotta);font-size:12px;cursor:pointer;font-weight:500;padding:0;" id="advBtn-${s.id}">Show more</button>`
           : escHtml(s.adviceText)}</p>` : ''}
-        ${s.notes ? `<div class="sub-lib-notes">${escHtml(s.notes)}</div>` : ''}
+        ${notesHtml}
         <div class="sub-lib-actions">
           <button class="sub-lib-rating-btn ${s.rating === 'great'   ? 'active-great'   : ''}" data-sid="${s.id}" data-rating="great">⭐ Great</button>
           <button class="sub-lib-rating-btn ${s.rating === 'partial' ? 'active-partial' : ''}" data-sid="${s.id}" data-rating="partial">~ Partial</button>
@@ -4733,7 +4741,7 @@ function renderSubLibrary() {
     }).join('');
 
     return `<div style="margin-bottom:20px;">
-      <p class="sub-lib-group-label">${escHtml(group.label)}</p>
+      <p class="sub-lib-group-label">🔄 ${escHtml(group.label)}</p>
       ${cards}
     </div>`;
   }).join('');
@@ -4793,7 +4801,7 @@ document.querySelectorAll('[data-ltab]').forEach(tab => {
   });
 });
 
-let currentLibTab = 'subs';
+let currentLibTab = 'picks';
 
 document.getElementById('libAddNewBtn').addEventListener('click', () => {
   openManualLibEntryModal(currentLibTab);
@@ -4900,24 +4908,32 @@ function renderProductPicksLibrary() {
     return;
   }
 
-  const ratingLabel = { great: '⭐ Great', partial: '~ OK', nope: '✕ Skip' };
   const ratingClass = { great: 'rating-great', partial: 'rating-partial', nope: 'rating-nope' };
   const sourceLabel = { photo: '📷 Photo scan', brand: '🔤 Brand search', manual: '✏️ Manual' };
 
-  // Group by ingredient
+  // Group by ingredient, sorted alphabetically
   const groups = {};
   picks.forEach(p => {
     const key = p.ingredient.toLowerCase();
     if (!groups[key]) groups[key] = { label: p.ingredient, items: [] };
     groups[key].items.push(p);
   });
+  const sortedGroups = Object.values(groups).sort((a, b) => a.label.localeCompare(b.label));
 
-  container.innerHTML = Object.values(groups).map(group => {
+  const NOTE_LIMIT = 120;
+
+  container.innerHTML = sortedGroups.map(group => {
     const cards = group.items.map(p => {
       const rClass = p.rating ? ratingClass[p.rating] : '';
-      // Make URL a clickable link if present
       const urlHtml = p.url
         ? '<a href="' + escHtml(p.url.startsWith('http') ? p.url : 'https://' + p.url) + '" target="_blank" rel="noopener" style="font-size:12px;color:var(--terracotta);display:block;margin-bottom:6px;word-break:break-all;">' + escHtml(p.url) + '</a>'
+        : '';
+
+      // Notes with show more/less
+      const notesHtml = p.notes
+        ? (p.notes.length > NOTE_LIMIT
+          ? '<div class="sub-lib-notes"><span class="note-preview-p' + p.id + '">' + escHtml(p.notes.slice(0, NOTE_LIMIT)) + '…</span><span class="note-full-p' + p.id + '" style="display:none;">' + escHtml(p.notes) + '</span> <button onclick="toggleNote(\'p' + p.id + '\')" id="noteBtn-p' + p.id + '" style="background:none;border:none;color:var(--terracotta);font-size:12px;cursor:pointer;font-weight:500;padding:0;">Show more</button></div>'
+          : '<div class="sub-lib-notes">' + escHtml(p.notes) + '</div>')
         : '';
 
       return '<div class="sub-lib-card ' + rClass + '" style="border-left-color:var(--gold);" data-pid="' + p.id + '">'
@@ -4936,7 +4952,7 @@ function renderProductPicksLibrary() {
               : escHtml(p.adviceText))
             + '</p>'
           : '')
-        + (p.notes ? '<div class="sub-lib-notes">' + escHtml(p.notes) + '</div>' : '')
+        + notesHtml
         + '<div class="sub-lib-actions">'
         + '<button class="sub-lib-rating-btn ' + (p.rating === 'great' ? 'active-great' : '') + '" data-pid="' + p.id + '" data-rating="great">⭐ Great</button>'
         + '<button class="sub-lib-rating-btn ' + (p.rating === 'partial' ? 'active-partial' : '') + '" data-pid="' + p.id + '" data-rating="partial">~ OK</button>'
@@ -5000,6 +5016,17 @@ function toggleAdvice(previewId, fullId) {
   const preview = document.querySelector('.advice-preview-' + previewId);
   const full    = document.querySelector('.advice-full-' + fullId);
   const btn     = document.getElementById('advBtn-' + previewId);
+  if (!preview || !full || !btn) return;
+  const expanded = full.style.display !== 'none';
+  preview.style.display = expanded ? 'inline' : 'none';
+  full.style.display    = expanded ? 'none'   : 'inline';
+  btn.textContent       = expanded ? 'Show more' : 'Show less';
+}
+
+function toggleNote(id) {
+  const preview = document.querySelector('.note-preview-' + id);
+  const full    = document.querySelector('.note-full-' + id);
+  const btn     = document.getElementById('noteBtn-' + id);
   if (!preview || !full || !btn) return;
   const expanded = full.style.display !== 'none';
   preview.style.display = expanded ? 'inline' : 'none';
