@@ -3932,7 +3932,7 @@ function addParsedRecipeToList(addToList) {
 // ── Recipe library render ─────────────────────────────────────────────────────
 
 function renderRecipeLibrary() {
-  const recipes = loadRecipes();
+  const recipes = loadRecipes().sort((a, b) => a.name.localeCompare(b.name));
   const container = document.getElementById('recipeLibraryList');
 
   if (!recipes.length) {
