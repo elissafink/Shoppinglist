@@ -1015,6 +1015,10 @@ html, body {
         <button class="icon-btn" id="clearCheckedBtn" title="Clear checked" style="display:none">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
+        <button id="shoppingDoneBtn" title="Shopping complete" style="display:none;height:32px;padding:0 12px;border-radius:999px;border:none;background:var(--sage-dark);color:white;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;align-items:center;gap:5px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Done shopping
+        </button>
         <button class="icon-btn" id="sortMenuBtn" title="Sort options">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/></svg>
         </button>
@@ -1096,6 +1100,7 @@ html, body {
     <div class="sort-tabs" style="margin-bottom:12px;">
       <button class="sort-tab" data-ltab="subs">🔄 Substitutions</button>
       <button class="sort-tab active" data-ltab="picks">⭐ Product Picks</button>
+      <button class="sort-tab" data-ltab="purchased">🛒 Purchased</button>
     </div>
   </div>
   <!-- Content panels -->
@@ -1104,6 +1109,9 @@ html, body {
   </div>
   <div id="libPicksPanel" style="flex:1;overflow-y:auto;padding:0 20px 40px;">
     <div id="libPicksList"></div>
+  </div>
+  <div id="libPurchasedPanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px 40px;">
+    <div id="libPurchasedList"></div>
   </div>
 </div>
 <div id="recipesView" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:var(--cream);z-index:50;display:none;flex-direction:column;">
@@ -1539,6 +1547,20 @@ html, body {
   </div>
 </div>
 
+<!-- Edit Name Modal -->
+<div class="modal-overlay" id="editNameModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h2 class="modal-title" style="margin-bottom:0;">Edit ingredient name</h2>
+      <button onclick="document.getElementById('editNameModal').classList.remove('open')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--parchment);color:var(--ink-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <input id="editNameInput" type="text" placeholder="Ingredient name"
+      style="width:100%;height:48px;padding:0 14px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:16px;color:var(--ink);outline:none;margin-bottom:12px;">
+    <button id="editNameSaveBtn" style="width:100%;height:44px;border-radius:10px;border:none;background:var(--terracotta);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;">Save</button>
+  </div>
+</div>
+
 <!-- Edit Quantity Modal -->
 <div class="modal-overlay" id="editQtyModal">
   <div class="modal-sheet">
@@ -1851,6 +1873,8 @@ function render() {
   document.getElementById('listMeta').textContent = metaParts.join(' · ');
 
   // Clear checked button
+  const shoppingDoneBtn = document.getElementById('shoppingDoneBtn');
+  if (shoppingDoneBtn) shoppingDoneBtn.style.display = checked > 0 ? 'flex' : 'none';
   document.getElementById('clearCheckedBtn').style.display = checked > 0 ? 'flex' : 'none';
 
   if (total === 0) {
@@ -2136,10 +2160,26 @@ function deleteItem(id) {
 }
 
 function clearChecked() {
+  const checkedItems = state.items.filter(i => i.checked);
+  if (!checkedItems.length) return;
+  // Archive to Purchased library
+  const purchased = loadPurchased();
+  const now = Date.now();
+  checkedItems.forEach(item => {
+    purchased.unshift({
+      id: now + Math.random(),
+      name: item.name,
+      quantity: item.quantity || '',
+      category: item.category || '',
+      recipes: item.recipes || [],
+      purchasedAt: now
+    });
+  });
+  savePurchased(purchased);
   state.items = state.items.filter(i => !i.checked);
   saveState();
   render();
-  showToast('Cleared checked items');
+  showToast(checkedItems.length + ' items moved to Purchased ✓');
 }
 
 // ── Item modal ────────────────────────────────────────────────────────────────
@@ -2163,6 +2203,10 @@ function openItemModal(id) {
   `).join('');
 
   list.innerHTML = `
+    <li class="action-item" data-action="editname">
+      <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Edit name
+    </li>
     <li class="action-item" data-action="editqty">
       <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Edit quantity
@@ -2209,7 +2253,8 @@ function openItemModal(id) {
   list.querySelectorAll('.action-item').forEach(el => {
     el.addEventListener('click', () => {
       const action = el.dataset.action;
-      if (action === 'editqty') { closeModal(); openEditQtyModal(id); }
+      if (action === 'editname') { closeModal(); openEditNameModal(id); }
+      else if (action === 'editqty') { closeModal(); openEditQtyModal(id); }
       else if (action === 'bestopt') { closeModal(); openBestOptModal(id); }
       else if (action === 'brandopt') { closeModal(); openBrandOptModal(id); }
       else if (action === 'subadvisor') { closeModal(); const it = state.items.find(i=>i.id===id); if(it) openSubModal(it.name, it.quantity, it.recipes?.[0]||''); }
@@ -2278,6 +2323,7 @@ document.getElementById('addInput').addEventListener('keydown', (e) => {
 // ── Clear checked ─────────────────────────────────────────────────────────────
 
 document.getElementById('clearCheckedBtn').addEventListener('click', clearChecked);
+document.getElementById('shoppingDoneBtn').addEventListener('click', clearChecked);
 
 // ── Voice input ───────────────────────────────────────────────────────────────
 
@@ -2543,6 +2589,7 @@ document.getElementById('exportDataBtn').addEventListener('click', () => {
     data: {
       subLibrary:    loadSubLibrary(),
       productPicks:  loadProductPicks(),
+      purchased:     loadPurchased(),
       recipes:       loadRecipes(),
       menus:         loadMenus(),
       shoppingList:  state.items,
@@ -2608,6 +2655,13 @@ document.getElementById('importFileInput').addEventListener('change', () => {
         saveRecipes([...toAdd, ...existing]);
         counts.recipes = toAdd.length;
       }
+      if (d.purchased?.length) {
+        const existing = loadPurchased();
+        const existingIds = new Set(existing.map(p => String(p.id)));
+        const toAdd = d.purchased.filter(p => !existingIds.has(String(p.id)));
+        savePurchased([...toAdd, ...existing]);
+      }
+
       if (d.menus?.length) {
         const existing = loadMenus();
         const existingIds = new Set(existing.map(m => m.id));
@@ -2717,6 +2771,7 @@ function showView(view) {
     libraryView.style.bottom   = bottomBarH + 'px';
     renderSubLibrary();
     renderProductPicksLibrary();
+    renderPurchasedLibrary();
   } else if (view === 'menus') {
     listHeader.style.display   = 'none';
     listScroll.style.display   = 'none';
@@ -3025,6 +3080,44 @@ document.getElementById('editQtyClearBtn').addEventListener('click', () => {
 
 document.getElementById('editQtyInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('editQtySaveBtn').click();
+});
+
+// ── Edit Name ─────────────────────────────────────────────────────────────────
+
+let editNameItemId = null;
+
+function openEditNameModal(id) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  editNameItemId = id;
+  document.getElementById('editNameInput').value = item.name || '';
+  document.getElementById('editNameModal').classList.add('open');
+  setTimeout(() => {
+    const input = document.getElementById('editNameInput');
+    input.focus();
+    input.select();
+  }, 300);
+}
+
+document.getElementById('editNameModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('editNameModal')) document.getElementById('editNameModal').classList.remove('open');
+});
+
+document.getElementById('editNameSaveBtn').addEventListener('click', () => {
+  if (!editNameItemId) return;
+  const item = state.items.find(i => i.id === editNameItemId);
+  if (!item) return;
+  const newName = document.getElementById('editNameInput').value.trim();
+  if (!newName) { showToast('Name cannot be empty'); return; }
+  item.name = newName;
+  saveState();
+  render();
+  document.getElementById('editNameModal').classList.remove('open');
+  showToast('Name updated ✓');
+});
+
+document.getElementById('editNameInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('editNameSaveBtn').click();
 });
 
 // ── Best Option Modal ─────────────────────────────────────────────────────────
@@ -4796,9 +4889,13 @@ document.querySelectorAll('[data-ltab]').forEach(tab => {
     document.querySelectorAll('[data-ltab]').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     const which = tab.dataset.ltab;
-    document.getElementById('libSubsPanel').style.display  = which === 'subs'  ? 'block' : 'none';
-    document.getElementById('libPicksPanel').style.display = which === 'picks' ? 'block' : 'none';
+    document.getElementById('libSubsPanel').style.display      = which === 'subs'      ? 'block' : 'none';
+    document.getElementById('libPicksPanel').style.display     = which === 'picks'     ? 'block' : 'none';
+    document.getElementById('libPurchasedPanel').style.display = which === 'purchased' ? 'block' : 'none';
     currentLibTab = which;
+    if (which === 'purchased') renderPurchasedLibrary();
+    // Hide Add entry for purchased tab — no manual add needed
+    document.getElementById('libAddNewBtn').style.display = which === 'purchased' ? 'none' : 'flex';
   });
 });
 
@@ -5033,6 +5130,77 @@ function toggleNote(id) {
   preview.style.display = expanded ? 'inline' : 'none';
   full.style.display    = expanded ? 'none'   : 'inline';
   btn.textContent       = expanded ? 'Show more' : 'Show less';
+}
+
+// ── Ingredients Purchased Library ─────────────────────────────────────────────
+
+function loadPurchased() {
+  try { return JSON.parse(localStorage.getItem('kc_purchased_v1') || '[]'); } catch(e) { return []; }
+}
+function savePurchased(items) {
+  try { localStorage.setItem('kc_purchased_v1', JSON.stringify(items)); } catch(e) {}
+}
+
+function renderPurchasedLibrary() {
+  const items = loadPurchased();
+  const container = document.getElementById('libPurchasedList');
+  if (!container) return;
+
+  if (!items.length) {
+    container.innerHTML = '<div class="empty-state" style="padding-top:40px;"><div class="empty-icon">🛒</div><p>No purchased items yet</p><p class="empty-hint">Check off items on your shopping list,<br>then tap "Done shopping" to archive them here.</p></div>';
+    return;
+  }
+
+  // Group by date
+  const groups = {};
+  items.forEach(item => {
+    const dateKey = new Date(item.purchasedAt).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
+    if (!groups[dateKey]) groups[groups[dateKey] = dateKey, dateKey] = { label: dateKey, ts: item.purchasedAt, items: [] };
+    groups[dateKey].items.push(item);
+  });
+
+  // Sort groups newest first
+  const sortedGroups = Object.values(groups).sort((a, b) => b.ts - a.ts);
+
+  // Clear all button
+  const clearAllHtml = '<div style="text-align:right;margin-bottom:12px;">'
+    + '<button onclick="clearAllPurchased()" style="background:none;border:1px solid var(--parchment);border-radius:8px;padding:6px 12px;font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--ink-muted);cursor:pointer;">Clear all purchased</button>'
+    + '</div>';
+
+  container.innerHTML = clearAllHtml + sortedGroups.map(group => {
+    const rows = group.items.map(item => {
+      const id = item.id;
+      const recipeTag = item.recipes?.length ? ' <span style="font-size:11px;color:var(--ink-ghost);">· ' + escHtml(item.recipes[0]) + '</span>' : '';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--parchment);" data-pid="' + id + '">'
+        + '<div>'
+        + '<span style="font-size:14px;color:var(--ink);">' + (item.quantity ? '<span style="color:var(--ink-muted);font-size:13px;">' + escHtml(item.quantity) + ' </span>' : '') + escHtml(item.name) + '</span>'
+        + recipeTag
+        + '</div>'
+        + '<button class="purchased-delete-btn" data-pid="' + id + '" style="background:none;border:none;color:var(--ink-ghost);cursor:pointer;font-size:18px;padding:0 4px;">✕</button>'
+        + '</div>';
+    }).join('');
+
+    return '<div style="margin-bottom:20px;">'
+      + '<p class="sub-lib-group-label">🗓 ' + escHtml(group.label) + '</p>'
+      + rows
+      + '</div>';
+  }).join('');
+
+  container.querySelectorAll('.purchased-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pid = btn.dataset.pid;
+      const updated = loadPurchased().filter(i => String(i.id) !== String(pid));
+      savePurchased(updated);
+      renderPurchasedLibrary();
+    });
+  });
+}
+
+function clearAllPurchased() {
+  if (!confirm('Clear all purchased items? This cannot be undone.')) return;
+  savePurchased([]);
+  renderPurchasedLibrary();
+  showToast('Purchased history cleared');
 }
 
 // ── Reset helpers for comparison flows ───────────────────────────────────────
