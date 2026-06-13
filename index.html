@@ -242,6 +242,20 @@ html, body {
   margin-top: 1px;
 }
 
+.item-source-breakdown {
+  margin-top: 3px;
+  padding-left: 10px;
+  border-left: 2px solid var(--parchment);
+}
+.item-source-line {
+  font-size: 11px;
+  color: var(--ink-ghost);
+  line-height: 1.5;
+}
+.item-source-recipe {
+  color: var(--ink-muted);
+}
+
 .item-recipe-tags {
   display: flex;
   flex-wrap: wrap;
@@ -1547,6 +1561,19 @@ html, body {
   </div>
 </div>
 
+<!-- Combine Items Modal -->
+<div class="modal-overlay" id="combineModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <h2 class="modal-title" id="combineModalTitle" style="margin-bottom:0;">Combine with…</h2>
+      <button onclick="document.getElementById('combineModal').classList.remove('open')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--parchment);color:var(--ink-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--ink-muted);margin-bottom:12px;">Pick another item to merge this into. Quantities will be added together and both recipes will be tracked.</p>
+    <div id="combineModalList" style="max-height:50vh;overflow-y:auto;"></div>
+  </div>
+</div>
+
 <!-- Edit Name Modal -->
 <div class="modal-overlay" id="editNameModal">
   <div class="modal-sheet">
@@ -2069,6 +2096,19 @@ function renderItem(item) {
 
   const qty = item.quantity ? `<div class="item-qty">${escHtml(item.quantity)}</div>` : '';
 
+  // Per-recipe breakdown when multiple sources contributed
+  let breakdown = '';
+  if (item.sources && item.sources.length > 1) {
+    const lines = item.sources
+      .filter(s => s.quantity || s.recipe)
+      .map(s => {
+        const label = s.recipe || 'Manual add';
+        const q = s.quantity ? escHtml(s.quantity) : '—';
+        return `<div class="item-source-line">${q} <span class="item-source-recipe">${escHtml(label)}</span></div>`;
+      }).join('');
+    if (lines) breakdown = `<div class="item-source-breakdown">${lines}</div>`;
+  }
+
   const storeDef = item.store ? STORES.find(s => s.key === item.store) : null;
   const storeBadge = storeDef
     ? `<span class="store-badge" style="background:${storeDef.color};color:${storeDef.text};border-color:${storeDef.color}">${storeDef.icon} ${storeDef.short}</span>`
@@ -2084,6 +2124,7 @@ function renderItem(item) {
       <div class="item-body">
         <div class="item-name">${escHtml(item.name)}</div>
         ${qty}
+        ${breakdown}
         <div class="item-recipe-tags">${recipeTags}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
@@ -2098,18 +2139,130 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// ── Quantity combining helpers ──────────────────────────────────────────────
+
+function normalizeIngredientName(name) {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+// Parse a quantity string's leading number into a decimal. Returns {num, unit} or null if no number found.
+function parseQtyParts(qty) {
+  if (!qty) return null;
+  const s = qty.trim();
+  // Mixed number: "1 1/2 cups"
+  let m = s.match(/^(\d+)\s+(\d+)\/(\d+)\s*(.*)$/);
+  if (m) return { num: parseInt(m[1]) + (parseInt(m[2]) / parseInt(m[3])), unit: m[4].trim() };
+  // Simple fraction: "1/2 cup"
+  m = s.match(/^(\d+)\/(\d+)\s*(.*)$/);
+  if (m) return { num: parseInt(m[1]) / parseInt(m[2]), unit: m[3].trim() };
+  // Decimal or whole number: "2 cups" or "2.5 oz" or "3"
+  m = s.match(/^(\d*\.?\d+)\s*(.*)$/);
+  if (m) return { num: parseFloat(m[1]), unit: m[2].trim() };
+  return null;
+}
+
+// Convert decimal back to a friendly fraction/whole string
+function decimalToFriendly(num) {
+  if (Math.abs(num - Math.round(num)) < 0.01) return Math.round(num).toString();
+  const whole = Math.floor(num);
+  const frac = num - whole;
+  const eighths = Math.round(frac * 8);
+  const fracMap = { 1: '1/8', 2: '1/4', 3: '3/8', 4: '1/2', 5: '5/8', 6: '3/4', 7: '7/8' };
+  if (eighths === 0) return whole.toString();
+  if (eighths === 8) return (whole + 1).toString();
+  const fracStr = fracMap[eighths];
+  return whole > 0 ? whole + ' ' + fracStr : fracStr;
+}
+
+// Normalize unit names for grouping (cups/cup, tbsp/tablespoon, etc.)
+function normalizeUnit(unit) {
+  let u = unit.toLowerCase().trim();
+  const map = {
+    'cups':'cup','c':'cup',
+    'tablespoons':'tbsp','tablespoon':'tbsp','tbsps':'tbsp','tbs':'tbsp',
+    'teaspoons':'tsp','teaspoon':'tsp','tsps':'tsp',
+    'ounces':'oz','ounce':'oz',
+    'pounds':'lb','pound':'lb','lbs':'lb',
+    'grams':'g','gram':'g',
+    'kilograms':'kg','kilogram':'kg',
+    'milliliters':'ml','milliliter':'ml',
+    'liters':'l','liter':'l',
+    'cloves':'clove',
+    'slices':'slice',
+    'cans':'can',
+    'pieces':'piece','piece(s)':'piece'
+  };
+  return map[u] || u;
+}
+
+// Combine an array of {quantity, recipe} sources into a single display string.
+// Groups by normalized unit and sums; quantities that can't be parsed are listed separately.
+function combineSources(sources) {
+  const byUnit = {}; // normalized unit -> {sum, displayUnit}
+  const unparsed = [];
+
+  sources.forEach(src => {
+    const parsed = parseQtyParts(src.quantity || '');
+    if (!parsed) {
+      if (src.quantity && src.quantity.trim()) unparsed.push(src.quantity.trim());
+      return;
+    }
+    const key = normalizeUnit(parsed.unit);
+    if (!byUnit[key]) byUnit[key] = { sum: 0, displayUnit: parsed.unit };
+    byUnit[key].sum += parsed.num;
+  });
+
+  const parts = [];
+  Object.values(byUnit).forEach(({ sum, displayUnit }) => {
+    const amount = decimalToFriendly(sum);
+    parts.push(displayUnit ? amount + ' ' + displayUnit : amount);
+  });
+
+  return [...parts, ...unparsed].join(' + ');
+}
+
 // ── Item actions ──────────────────────────────────────────────────────────────
 
 function addItem(name, options = {}) {
   const trimmed = name.trim();
   if (!trimmed) return;
+  const normalized = normalizeIngredientName(trimmed);
+
+  // Look for an existing unchecked item with the same name — combine instead of duplicating
+  const existing = state.items.find(i => !i.checked && normalizeIngredientName(i.name) === normalized);
+
+  if (existing) {
+    // Seed sources from existing item if it doesn't have them yet (backward compatibility)
+    if (!existing.sources || !existing.sources.length) {
+      const recipeNames = existing.recipes && existing.recipes.length ? existing.recipes : [null];
+      existing.sources = recipeNames.map(r => ({ quantity: existing.quantity || '', recipe: r }));
+    }
+    // Add the new contribution
+    const newRecipe = (options.recipes && options.recipes[0]) || null;
+    existing.sources.push({ quantity: options.quantity || '', recipe: newRecipe });
+
+    // Recombine quantity and recipe tags
+    existing.quantity = combineSources(existing.sources);
+    const allRecipeNames = existing.sources.map(s => s.recipe).filter(Boolean);
+    existing.recipes = [...new Set(allRecipeNames)];
+
+    // Fill category if missing
+    if (!existing.category && options.category) existing.category = options.category;
+
+    saveState();
+    render();
+    return existing;
+  }
+
   const category = options.category || guessCategory(trimmed);
+  const recipe = (options.recipes && options.recipes[0]) || null;
   const item = {
     id: state.nextId++,
     name: trimmed,
     quantity: options.quantity || '',
     category,
     recipes: options.recipes || [],
+    sources: [{ quantity: options.quantity || '', recipe }],
     urgency: options.urgency || null,
     checked: false,
     addedAt: Date.now()
@@ -2235,6 +2388,10 @@ function openItemModal(id) {
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       ${item.urgency === 'pantry' ? 'Remove pantry check tag' : 'Mark as Check Pantry'}
     </li>
+    <li class="action-item" data-action="combine">
+      <svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/></svg>
+      Combine with another item
+    </li>
     <li class="action-item" data-action="check">
       <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
       ${item.checked ? 'Uncheck' : 'Check off'}
@@ -2254,6 +2411,7 @@ function openItemModal(id) {
     el.addEventListener('click', () => {
       const action = el.dataset.action;
       if (action === 'editname') { closeModal(); openEditNameModal(id); }
+      else if (action === 'combine') { closeModal(); openCombineModal(id); }
       else if (action === 'editqty') { closeModal(); openEditQtyModal(id); }
       else if (action === 'bestopt') { closeModal(); openBestOptModal(id); }
       else if (action === 'brandopt') { closeModal(); openBrandOptModal(id); }
@@ -3082,6 +3240,69 @@ document.getElementById('editQtyInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('editQtySaveBtn').click();
 });
 
+// ── Merge / Combine items ────────────────────────────────────────────────────
+
+function ensureSources(item) {
+  if (!item.sources || !item.sources.length) {
+    const recipeNames = item.recipes && item.recipes.length ? item.recipes : [null];
+    item.sources = recipeNames.map(r => ({ quantity: item.quantity || '', recipe: r }));
+  }
+}
+
+function mergeItems(sourceId, targetId) {
+  const source = state.items.find(i => i.id === sourceId);
+  const target = state.items.find(i => i.id === targetId);
+  if (!source || !target || source.id === target.id) return;
+
+  ensureSources(source);
+  ensureSources(target);
+
+  target.sources = [...target.sources, ...source.sources];
+  target.quantity = combineSources(target.sources);
+  target.recipes = [...new Set(target.sources.map(s => s.recipe).filter(Boolean))];
+
+  state.items = state.items.filter(i => i.id !== sourceId);
+  saveState();
+  render();
+}
+
+function openCombineModal(id) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  document.getElementById('combineModalTitle').textContent = 'Combine "' + item.name + '" with…';
+
+  const others = state.items.filter(i => i.id !== id && !i.checked);
+  const listEl = document.getElementById('combineModalList');
+
+  if (!others.length) {
+    listEl.innerHTML = '<p style="font-size:13px;color:var(--ink-ghost);padding:16px 0;text-align:center;">No other items to combine with.</p>';
+  } else {
+    listEl.innerHTML = others.map(o => {
+      const qtyStr = o.quantity ? escHtml(o.quantity) + ' ' : '';
+      return '<div class="combine-option" data-target="' + o.id + '" style="display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:0.5px solid var(--parchment);cursor:pointer;">'
+        + '<div><span style="font-size:14px;color:var(--ink);">' + qtyStr + escHtml(o.name) + '</span></div>'
+        + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-ghost)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+        + '</div>';
+    }).join('');
+
+    listEl.querySelectorAll('.combine-option').forEach(el => {
+      el.addEventListener('click', () => {
+        const targetId = parseInt(el.dataset.target);
+        const targetItem = state.items.find(i => i.id === targetId);
+        mergeItems(id, targetId);
+        document.getElementById('combineModal').classList.remove('open');
+        showToast('Combined into "' + (targetItem?.name || 'item') + '" ✓');
+      });
+    });
+  }
+
+  document.getElementById('combineModal').classList.add('open');
+}
+
+document.getElementById('combineModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('combineModal')) document.getElementById('combineModal').classList.remove('open');
+});
+
 // ── Edit Name ─────────────────────────────────────────────────────────────────
 
 let editNameItemId = null;
@@ -3109,10 +3330,23 @@ document.getElementById('editNameSaveBtn').addEventListener('click', () => {
   if (!item) return;
   const newName = document.getElementById('editNameInput').value.trim();
   if (!newName) { showToast('Name cannot be empty'); return; }
+
+  const normalized = normalizeIngredientName(newName);
   item.name = newName;
+
+  // Check for another unchecked item that now has the same name — auto-merge
+  const duplicate = state.items.find(i => i.id !== item.id && !i.checked && normalizeIngredientName(i.name) === normalized);
+
+  document.getElementById('editNameModal').classList.remove('open');
+
+  if (duplicate) {
+    mergeItems(item.id, duplicate.id);
+    showToast('Combined with "' + duplicate.name + '" ✓');
+    return;
+  }
+
   saveState();
   render();
-  document.getElementById('editNameModal').classList.remove('open');
   showToast('Name updated ✓');
 });
 
