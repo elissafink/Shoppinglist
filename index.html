@@ -529,8 +529,12 @@ html, body {
 .menu-textarea { width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;resize:none;line-height:1.5;margin-bottom:12px; }
 
 /* Timeline task rows */
-.timeline-task { display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--parchment); }
+.timeline-task { display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--parchment);touch-action:none; }
 .timeline-task:last-child { border-bottom:none; }
+.timeline-task.dragging { opacity:0.4; }
+.timeline-task.drag-over { border-top:2px solid var(--terracotta); }
+.task-drag-handle { color:var(--ink-ghost);cursor:grab;flex-shrink:0;padding-top:3px;touch-action:none;user-select:none; }
+.task-drag-handle:active { cursor:grabbing; }
 .task-time { font-size:12px;font-weight:600;color:var(--terracotta);white-space:nowrap;min-width:52px;padding-top:2px; }
 .task-text { flex:1;font-size:13px;color:var(--ink);line-height:1.5;background:none;border:none;font-family:'DM Sans',sans-serif;outline:none;resize:none;width:100%;padding:0; }
 .task-delete { background:none;border:none;cursor:pointer;color:var(--ink-ghost);font-size:16px;padding:0;flex-shrink:0; }
@@ -5389,7 +5393,7 @@ function renderPurchasedLibrary() {
   const groups = {};
   items.forEach(item => {
     const dateKey = new Date(item.purchasedAt).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
-    if (!groups[dateKey]) groups[groups[dateKey] = dateKey, dateKey] = { label: dateKey, ts: item.purchasedAt, items: [] };
+    if (!groups[dateKey]) groups[dateKey] = { label: dateKey, ts: item.purchasedAt, items: [] };
     groups[dateKey].items.push(item);
   });
 
@@ -5547,7 +5551,8 @@ function renderMenuCreateForm() {
   // Tasks list
   const tasksHtml = m.tasks.length
     ? m.tasks.map((t, i) =>
-        '<div class="timeline-task">'
+        '<div class="timeline-task" draggable="true" data-tidx="' + i + '">'
+        + '<div class="task-drag-handle" title="Drag to reorder"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></div>'
         + '<input type="text" class="task-time" value="' + escHtml(t.time || '') + '" placeholder="Time" data-tidx="' + i + '">'
         + '<textarea class="task-text" rows="2" data-tidx="' + i + '">' + escHtml(t.text || '') + '</textarea>'
         + '<button class="task-delete" data-tidx="' + i + '">✕</button>'
@@ -5646,13 +5651,122 @@ function renderMenuCreateForm() {
   panel.querySelectorAll('.task-delete').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.tidx);
+      syncMenuFormFields();
       activeMenu.tasks.splice(idx, 1);
       renderMenuCreateForm();
     });
   });
 
+  // Drag-to-reorder
+  wireTaskSorting(panel);
+
   // Generate timeline button
   document.getElementById('genTimelineBtn').addEventListener('click', generateTimeline);
+}
+
+// ── Task list drag-to-reorder ────────────────────────────────────────────────
+
+function wireTaskSorting(panel) {
+  const taskList = panel.querySelector('#menuTaskList');
+  if (!taskList) return;
+
+  let dragSrcIdx = null;
+  let touchDragEl = null;
+  let touchClone = null;
+  let touchStartY = 0;
+
+  function syncTaskFields() {
+    panel.querySelectorAll('.task-time').forEach(inp => {
+      const idx = parseInt(inp.dataset.tidx);
+      if (activeMenu.tasks[idx]) activeMenu.tasks[idx].time = inp.value;
+    });
+    panel.querySelectorAll('.task-text').forEach(ta => {
+      const idx = parseInt(ta.dataset.tidx);
+      if (activeMenu.tasks[idx]) activeMenu.tasks[idx].text = ta.value;
+    });
+  }
+
+  function reorder(fromIdx, toIdx) {
+    if (fromIdx === toIdx || fromIdx == null || toIdx == null) return;
+    syncTaskFields();
+    syncMenuFormFields();
+    const moved = activeMenu.tasks.splice(fromIdx, 1)[0];
+    activeMenu.tasks.splice(toIdx, 0, moved);
+    renderMenuCreateForm();
+  }
+
+  const tasks = taskList.querySelectorAll('.timeline-task');
+
+  // Desktop: HTML5 drag and drop
+  tasks.forEach(task => {
+    const idx = parseInt(task.dataset.tidx);
+    task.addEventListener('dragstart', e => {
+      dragSrcIdx = idx;
+      task.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    task.addEventListener('dragend', () => {
+      task.classList.remove('dragging');
+      taskList.querySelectorAll('.timeline-task').forEach(t => t.classList.remove('drag-over'));
+    });
+    task.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      taskList.querySelectorAll('.timeline-task').forEach(t => t.classList.remove('drag-over'));
+      task.classList.add('drag-over');
+    });
+    task.addEventListener('drop', e => {
+      e.preventDefault();
+      task.classList.remove('drag-over');
+      reorder(dragSrcIdx, parseInt(task.dataset.tidx));
+    });
+  });
+
+  // Mobile: touch drag via the grip handle
+  tasks.forEach(task => {
+    const handle = task.querySelector('.task-drag-handle');
+    if (!handle) return;
+    const fromIdx = parseInt(task.dataset.tidx);
+
+    handle.addEventListener('touchstart', e => {
+      e.preventDefault();
+      touchDragEl = task;
+      touchStartY = e.touches[0].clientY;
+      const rect = task.getBoundingClientRect();
+      touchClone = task.cloneNode(true);
+      touchClone.style.cssText = 'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width + 'px;background:var(--warm-white);opacity:0.92;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);pointer-events:none;z-index:999;padding:10px 14px;';
+      document.body.appendChild(touchClone);
+      task.style.opacity = '0.3';
+    }, { passive: false });
+
+    handle.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (!touchClone) return;
+      const dy = e.touches[0].clientY - touchStartY;
+      const origTop = touchDragEl.getBoundingClientRect().top;
+      touchClone.style.top = (origTop + dy) + 'px';
+      const touchY = e.touches[0].clientY;
+      taskList.querySelectorAll('.timeline-task').forEach(t => {
+        t.classList.remove('drag-over');
+        const r = t.getBoundingClientRect();
+        if (touchY >= r.top && touchY <= r.bottom && t !== touchDragEl) t.classList.add('drag-over');
+      });
+    }, { passive: false });
+
+    handle.addEventListener('touchend', e => {
+      if (touchClone) { touchClone.remove(); touchClone = null; }
+      if (touchDragEl) touchDragEl.style.opacity = '';
+      const touchY = e.changedTouches[0].clientY;
+      let toIdx = null;
+      taskList.querySelectorAll('.timeline-task').forEach(t => {
+        t.classList.remove('drag-over');
+        const r = t.getBoundingClientRect();
+        if (touchY >= r.top && touchY <= r.bottom) toIdx = parseInt(t.dataset.tidx);
+      });
+      if (toIdx !== null) reorder(fromIdx, toIdx);
+      touchDragEl = null;
+    });
+  });
 }
 
 function syncMenuFormFields() {
