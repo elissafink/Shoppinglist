@@ -529,15 +529,15 @@ html, body {
 .menu-textarea { width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--parchment);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;resize:none;line-height:1.5;margin-bottom:12px; }
 
 /* Timeline task rows */
-.timeline-task { display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--parchment);touch-action:none; }
+.timeline-task { display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:0.5px solid var(--parchment); }
 .timeline-task:last-child { border-bottom:none; }
 .timeline-task.dragging { opacity:0.4; }
 .timeline-task.drag-over { border-top:2px solid var(--terracotta); }
 .task-drag-handle { color:var(--ink-ghost);cursor:grab;flex-shrink:0;padding-top:3px;touch-action:none;user-select:none; }
 .task-drag-handle:active { cursor:grabbing; }
-.task-time { font-size:12px;font-weight:600;color:var(--terracotta);white-space:nowrap;min-width:52px;padding-top:2px; }
-.task-text { flex:1;font-size:13px;color:var(--ink);line-height:1.5;background:none;border:none;font-family:'DM Sans',sans-serif;outline:none;resize:none;width:100%;padding:0; }
-.task-delete { background:none;border:none;cursor:pointer;color:var(--ink-ghost);font-size:16px;padding:0;flex-shrink:0; }
+.task-time { font-size:12px;font-weight:600;color:var(--terracotta);white-space:nowrap;width:44px;padding-top:2px;flex-shrink:0; }
+.task-text { flex:1;font-size:13px;color:var(--ink);line-height:1.5;background:none;border:none;font-family:'DM Sans',sans-serif;outline:none;resize:none;width:100%;padding:0;min-width:0; }
+.task-delete { background:none;border:none;cursor:pointer;color:var(--ink-ghost);font-size:18px;padding:2px 0 0 4px;flex-shrink:0;line-height:1; }
 
 /* Sub-screen back link — used on Recipes, Settings, Library, and any future views */
 .back-link {
@@ -1122,13 +1122,13 @@ html, body {
     </div>
   </div>
   <!-- Content panels -->
-  <div id="libSubsPanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px 40px;">
+  <div id="libSubsPanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px 40px;-webkit-overflow-scrolling:touch;">
     <div id="libraryList"></div>
   </div>
-  <div id="libPicksPanel" style="flex:1;overflow-y:auto;padding:0 20px 40px;">
+  <div id="libPicksPanel" style="flex:1;overflow-y:auto;padding:0 20px 40px;-webkit-overflow-scrolling:touch;">
     <div id="libPicksList"></div>
   </div>
-  <div id="libPurchasedPanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px 40px;">
+  <div id="libPurchasedPanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px 40px;-webkit-overflow-scrolling:touch;">
     <div id="libPurchasedList"></div>
   </div>
 </div>
@@ -1785,8 +1785,8 @@ html, body {
       <button class="sort-tab" data-mtab="create">Create / Edit</button>
     </div>
   </div>
-  <div id="menusSavedPanel" style="flex:1;overflow-y:auto;padding:0 20px 40px;"><div id="menusSavedList"></div></div>
-  <div id="menusCreatePanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px 80px;"></div>
+  <div id="menusSavedPanel" style="flex:1;overflow-y:auto;padding:0 20px 40px;-webkit-overflow-scrolling:touch;"><div id="menusSavedList"></div></div>
+  <div id="menusCreatePanel" style="display:none;flex:1;overflow-y:auto;padding:0 20px 40px;-webkit-overflow-scrolling:touch;"></div>
 </div>
 
 <!-- Brand name advisor modal -->
@@ -5552,8 +5552,8 @@ function renderMenuCreateForm() {
   const tasksHtml = m.tasks.length
     ? m.tasks.map((t, i) =>
         '<div class="timeline-task" draggable="true" data-tidx="' + i + '">'
-        + '<div class="task-drag-handle" title="Drag to reorder"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></div>'
-        + '<input type="text" class="task-time" value="' + escHtml(t.time || '') + '" placeholder="Time" data-tidx="' + i + '">'
+        + '<div class="task-drag-handle" title="Drag to reorder"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></div>'
+        + '<input type="text" class="task-time" value="' + escHtml(t.time || '') + '" placeholder="HH:MM" data-tidx="' + i + '" style="width:44px;">'
         + '<textarea class="task-text" rows="2" data-tidx="' + i + '">' + escHtml(t.text || '') + '</textarea>'
         + '<button class="task-delete" data-tidx="' + i + '">✕</button>'
         + '</div>'
@@ -5610,8 +5610,9 @@ function renderMenuCreateForm() {
     + '<div style="width:24px;height:24px;border:3px solid var(--parchment);border-top-color:var(--sage);border-radius:50%;margin:0 auto 8px;animation:spin 0.8s linear infinite;"></div>'
     + '<p style="font-size:13px;color:var(--ink-muted);">Generating prep schedule…</p>'
     + '</div>'
-    + '<div id="menuTaskList">' + (tasksHtml || '<p style="font-size:13px;color:var(--ink-ghost);padding:8px 0;">No tasks yet — generate a schedule or add tasks manually.</p>') + '</div>'
-    + '<button onclick="addMenuTask()" style="margin-top:8px;background:none;border:1px dashed var(--ink-ghost);border-radius:8px;width:100%;height:36px;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--ink-muted);cursor:pointer;">+ Add task manually</button>'
+    + '<div id="menuTaskList" style="width:92%;">' + (tasksHtml || '<p style="font-size:13px;color:var(--ink-ghost);padding:8px 0;">No tasks yet — generate a schedule or add tasks manually.</p>') + '</div>'
+    + '<p style="font-size:11px;color:var(--ink-ghost);margin-top:4px;text-align:right;padding-right:8px;">← scroll zone →</p>'
+    + '<button onclick="addMenuTask()" style="margin-top:8px;background:none;border:1px dashed var(--ink-ghost);border-radius:8px;width:92%;height:36px;font-family:\'DM Sans\',sans-serif;font-size:13px;color:var(--ink-muted);cursor:pointer;">+ Add task manually</button>'
 
     // ── Save ──
     + '<div style="display:flex;gap:8px;margin-top:20px;">'
